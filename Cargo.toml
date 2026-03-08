@@ -1,0 +1,13 @@
+[package]
+name = "pxtally"
+version = "1.0.0"
+edition = "2024"
+authors = [ "tukinami seika" ]
+license = "MIT"
+readme = "README.md"
+description = "CLI tool to tally pixel."
+
+[dependencies]
+image = "0.25.9"
+clap = { version = "4.5.60", features = ["derive"] }
+bigcolor = "1.2.1"
