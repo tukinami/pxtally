@@ -132,7 +132,7 @@ Options:
 
 + [clap](https://github.com/clap-rs/clap) / Kevin B. Knapp and Clap Contributors
 + [image](https://github.com/image-rs/image) / The image-rs Developers
-+ [bigcolor](https://github.com/ducflair/bigcolor) / Lea Verou, Chris Lilley, Ducflair
++ [color](https://github.com/linebender/color) / Raph Levien, Bruce Mitchener, Jr., Tom Churchman, Jordan Johnson
 
 ## ライセンス
 

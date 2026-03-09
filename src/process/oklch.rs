@@ -1,4 +1,4 @@
-use bigcolor::color_space::OKLCH;
+use color::{Oklch, OpaqueColor};
 use image::{Rgb, RgbImage};
 
 use crate::{
@@ -16,23 +16,23 @@ struct OklchFilter {
 
 impl OklchFilter {
     pub fn new(start_hue: &Option<u16>, end_hue: &Option<u16>) -> OklchFilter {
-        let hue = <OklchFilter as Filter<OKLCH>>::hue_filter(start_hue, end_hue);
+        let hue = <OklchFilter as Filter<OpaqueColor<Oklch>>>::hue_filter(start_hue, end_hue);
 
         OklchFilter { hue }
     }
 }
 
-impl Filter<OKLCH> for OklchFilter {
-    fn contains(&self, target: &OKLCH) -> bool {
+impl Filter<OpaqueColor<Oklch>> for OklchFilter {
+    fn contains(&self, target: &OpaqueColor<Oklch>) -> bool {
         self.hue
             .as_ref()
-            .map(|v| v.contains(&target.h))
+            .map(|v| v.contains(&target.components[2]))
             .unwrap_or(true)
     }
 
-    fn to_target(pixel: &Rgb<u8>) -> OKLCH {
-        let big_color = bigcolor::BigColor::from_rgb(pixel.0[0], pixel.0[1], pixel.0[2], 1.0);
-        big_color.to_oklch()
+    fn to_target(pixel: &Rgb<u8>) -> OpaqueColor<Oklch> {
+        let color_rgb = OpaqueColor::from_rgb8(pixel.0[0], pixel.0[1], pixel.0[2]);
+        color_rgb.convert::<Oklch>()
     }
 }
 
@@ -104,14 +104,14 @@ fn process_hue(rgb_image: &RgbImage, divisor: u16, start: u16) {
     );
 }
 
-fn pixel_to_lightness(oklch: &OKLCH) -> f32 {
-    oklch.l
+fn pixel_to_lightness(oklch: &OpaqueColor<Oklch>) -> f32 {
+    oklch.components[0]
 }
 
-fn pixel_to_chroma(oklch: &OKLCH) -> f32 {
-    oklch.c
+fn pixel_to_chroma(oklch: &OpaqueColor<Oklch>) -> f32 {
+    oklch.components[1]
 }
 
-fn pixel_to_hue(oklch: &OKLCH) -> f32 {
-    oklch.h
+fn pixel_to_hue(oklch: &OpaqueColor<Oklch>) -> f32 {
+    oklch.components[2]
 }
