@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     config::ImgOklchArgs,
     process::{load_image, ProcessError},
@@ -8,9 +10,11 @@ use bigcolor::color_space::oklch_to_rgb;
 pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), ProcessError> {
     let mut rgb_image = load_image(&args.input)?;
     let pixels = rgb_image.pixels_mut();
+    let mut record = HashMap::new();
 
     for pixel in pixels {
-        let (r, g, b, _a) = oklch_to_adjust_rgb(&pixel.0, args.lightness, args.chroma, args.hue);
+        let (r, g, b, _a) =
+            oklch_to_adjust_rgb(&mut record, &pixel.0, args.lightness, args.chroma, args.hue);
         pixel.0[0] = r;
         pixel.0[1] = g;
         pixel.0[2] = b;
@@ -21,11 +25,16 @@ pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), ProcessError>
 }
 
 fn oklch_to_adjust_rgb(
+    record: &mut HashMap<[u8; 3], (u8, u8, u8, f32)>,
     pixel: &[u8; 3],
     lightness: Option<f32>,
     chroma: Option<f32>,
     hue: Option<u16>,
 ) -> (u8, u8, u8, f32) {
+    if let Some(v) = record.get(pixel) {
+        return v.clone();
+    }
+
     let big_color = bigcolor::BigColor::from_rgb(pixel[0], pixel[1], pixel[2], 1.0);
     let mut oklch = big_color.to_oklch();
     if let Some(l) = lightness {
@@ -37,7 +46,11 @@ fn oklch_to_adjust_rgb(
     if let Some(h) = hue {
         oklch.h = h as f32;
     }
-    oklch_to_rgb(oklch)
+
+    let rgba = oklch_to_rgb(oklch);
+    record.insert(pixel.clone(), rgba.clone());
+
+    rgba
 }
 
 #[cfg(test)]
