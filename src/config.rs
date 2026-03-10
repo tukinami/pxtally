@@ -23,6 +23,7 @@ pub(crate) enum Commands {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum HslCommands {
+    #[command(short_flag = 'H')]
     /// About hue
     Hue(AngleArgs),
     #[command(short_flag = 's')]
@@ -41,6 +42,7 @@ pub(crate) enum OklchCommands {
     #[command(short_flag = 'c')]
     /// About chroma
     Chroma(ChromaArgs),
+    #[command(short_flag = 'H')]
     /// About hue
     Hue(AngleArgs),
 }
