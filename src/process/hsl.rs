@@ -113,3 +113,19 @@ fn pixel_to_saturation(hsla: &HSL) -> f32 {
 fn pixel_to_lightness(hsla: &HSL) -> f32 {
     hsla.l
 }
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn checking_value() {
+        let target = bigcolor::BigColor::from_rgb(255, 255, 255, 1.0);
+        let hsl = target.to_hsl();
+        println!("{}", hsl.l);
+        assert_eq!(hsl.l, 1.0);
+
+        let target = bigcolor::BigColor::from_rgb(0, 0, 0, 1.0);
+        let hsl = target.to_hsl();
+        assert_eq!(hsl.l, 0.0);
+    }
+}

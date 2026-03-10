@@ -126,5 +126,9 @@ mod tests {
         let oklch = target.to_oklch();
         println!("{}", oklch.l);
         assert_eq!(oklch.l, 1.000001);
+
+        let target = bigcolor::BigColor::from_rgb(0, 0, 0, 1.0);
+        let oklch = target.to_oklch();
+        assert_eq!(oklch.l, 0.0);
     }
 }
