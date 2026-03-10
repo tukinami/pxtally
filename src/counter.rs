@@ -7,7 +7,7 @@ pub(crate) trait Counter {
     fn start(&self) -> f32;
     fn end(&self) -> f32;
     fn count(&self) -> u128;
-    fn count_up(&mut self);
+    fn count_add(&mut self, value: u128);
 }
 
 pub(crate) trait Filter<T> {
@@ -131,8 +131,8 @@ impl Counter for AngleCounter {
         self.count
     }
 
-    fn count_up(&mut self) {
-        self.count += 1;
+    fn count_add(&mut self, value: u128) {
+        self.count += value
     }
 }
 
@@ -166,8 +166,8 @@ impl Counter for PercentageCounter {
         self.count
     }
 
-    fn count_up(&mut self) {
-        self.count += 1;
+    fn count_add(&mut self, value: u128) {
+        self.count += value
     }
 }
 
@@ -198,9 +198,7 @@ where
             if let Some(counter) = counters.iter_mut().find(|c| c.contains(&t)) {
                 total_value += t as f64 * *pixel_count as f64;
                 total_pixel += *pixel_count;
-                for _i in 0..*pixel_count {
-                    counter.count_up();
-                }
+                counter.count_add(*pixel_count);
             }
         }
     }
