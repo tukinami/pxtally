@@ -76,7 +76,7 @@ fn process_chroma(
     start_hue: &Option<u16>,
     end_hue: &Option<u16>,
 ) {
-    let mut counters = create_counters(divisor, 0.0, 0.4, PercentageCounter::new);
+    let mut counters = create_counters(divisor, 0.0, 0.5, PercentageCounter::new);
 
     let filter = OklchFilter::new(start_hue, end_hue);
 
@@ -114,4 +114,23 @@ fn pixel_to_chroma(oklch: &OpaqueColor<Oklch>) -> f32 {
 
 fn pixel_to_hue(oklch: &OpaqueColor<Oklch>) -> f32 {
     oklch.components[2]
+}
+
+#[cfg(test)]
+mod tests {
+    use color::{Oklch, OpaqueColor};
+
+    #[test]
+    fn checking_value() {
+        let target = OpaqueColor::from_rgb8(255, 255, 255);
+        let oklch = target.convert::<Oklch>();
+        println!("{}", oklch.components[0]);
+        assert_eq!(oklch.components[0], 1.0);
+
+        let target = OpaqueColor::from_rgb8(0, 0, 0);
+        let oklch = target.convert::<Oklch>();
+        println!("{}", oklch.components[0]);
+        assert_eq!(oklch.components[1], 0.0);
+        assert_eq!(oklch.components[0], 0.0);
+    }
 }

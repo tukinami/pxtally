@@ -71,7 +71,7 @@ fn process_hue(rgb_image: &RgbImage, divisor: u16, start: u16) {
 }
 
 fn process_saturation(rgb_image: &RgbImage, divisor: u16) {
-    let mut counters = create_counters(divisor, 0.0, 1.0, PercentageCounter::new);
+    let mut counters = create_counters(divisor, 0.0, 100.0, PercentageCounter::new);
 
     let filter = HslFilter::new(&None, &None);
 
@@ -87,7 +87,7 @@ fn process_saturation(rgb_image: &RgbImage, divisor: u16) {
 }
 
 fn process_lightness(rgb_image: &RgbImage, divisor: u16) {
-    let mut counters = create_counters(divisor, 0.0, 1.0, PercentageCounter::new);
+    let mut counters = create_counters(divisor, 0.0, 100.0, PercentageCounter::new);
 
     let filter = HslFilter::new(&None, &None);
 
@@ -112,4 +112,28 @@ fn pixel_to_saturation(hsl: &OpaqueColor<Hsl>) -> f32 {
 
 fn pixel_to_lightness(hsl: &OpaqueColor<Hsl>) -> f32 {
     hsl.components[2]
+}
+
+#[cfg(test)]
+mod tests {
+    use color::{Hsl, OpaqueColor};
+
+    #[test]
+    fn checking_value() {
+        let target = OpaqueColor::from_rgb8(255, 255, 255);
+        let hsl = target.convert::<Hsl>();
+        println!("{}", hsl.components[2]);
+        assert_eq!(hsl.components[1], 0.0);
+        assert_eq!(hsl.components[2], 100.0);
+
+        let target = OpaqueColor::from_rgb8(0, 0, 0);
+        let hsl = target.convert::<Hsl>();
+        println!("{}", hsl.components[2]);
+        assert_eq!(hsl.components[2], 0.0);
+
+        let target = OpaqueColor::from_rgb8(255, 0, 0);
+        let hsl = target.convert::<Hsl>();
+        println!("{}", hsl.components[1]);
+        assert_eq!(hsl.components[1], 100.0);
+    }
 }
