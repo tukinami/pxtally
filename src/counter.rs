@@ -52,6 +52,7 @@ pub(crate) struct Angle {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct AngleCounter {
     start: f32,
+    end: f32,
     width: f32,
     angle: Angle,
     count: u128,
@@ -61,7 +62,6 @@ pub(crate) struct AngleCounter {
 pub(crate) struct PercentageCounter {
     start: f32,
     end: f32,
-    width: f32,
     range: Range<f32>,
     count: u128,
 }
@@ -92,14 +92,21 @@ impl Angle {
 }
 
 impl AngleCounter {
-    pub fn new(start: f32, width: f32) -> AngleCounter {
+    pub fn new(start: f32, end: f32) -> AngleCounter {
         let start = rotate_value(start);
-        let width = rotate_value(width);
+        let end = rotate_value(end);
+
+        let width = if start > end {
+            360.0 - start + end
+        } else {
+            end - start
+        };
 
         let angle = Angle::new(start, width);
 
         AngleCounter {
             start,
+            end,
             width,
             angle,
             count: 0,
@@ -117,7 +124,7 @@ impl Counter for AngleCounter {
     }
 
     fn end(&self) -> f32 {
-        rotate_value(self.start + self.width)
+        self.end
     }
 
     fn count(&self) -> u128 {
@@ -130,14 +137,12 @@ impl Counter for AngleCounter {
 }
 
 impl PercentageCounter {
-    pub fn new(start: f32, width: f32) -> PercentageCounter {
-        let end = start + width;
+    pub fn new(start: f32, end: f32) -> PercentageCounter {
         let range = start..end;
 
         PercentageCounter {
             start,
             end,
-            width,
             range,
             count: 0,
         }
@@ -203,7 +208,7 @@ where
     total_value / total_pixel as f64
 }
 
-pub(crate) fn create_counters<C, B>(divisor: u16, start: f32, max: f32, builder: B) -> Vec<C>
+pub(crate) fn create_counters<C, B>(divisor: u16, start: f32, width: f32, builder: B) -> Vec<C>
 where
     B: Fn(f32, f32) -> C,
 {
@@ -212,19 +217,20 @@ where
         return counters;
     }
 
-    let quotient = max / divisor as f32;
+    let quotient = width / divisor as f32;
     let mut target_value = 0.0;
 
     for _i in 0..divisor - 1 {
         let start_value = start + target_value;
-        let counter = builder(start_value, quotient);
+        let end_value = start_value + quotient;
+        let counter = builder(start_value, end_value);
         counters.push(counter);
         target_value += quotient;
     }
 
-    let remain = max - target_value;
     let start_value = start + target_value;
-    let counter = builder(start_value, remain + f32::EPSILON);
+    let end_value = start + width;
+    let counter = builder(start_value, end_value.next_up());
     counters.push(counter);
 
     counters
@@ -252,8 +258,10 @@ where
 }
 
 fn rotate_value(raw_value: f32) -> f32 {
-    if (0.0..360.0).contains(&raw_value.abs()) {
+    if (0.0..360.0).contains(&raw_value) {
         raw_value.abs()
+    } else if raw_value < 0.0 {
+        360.0 + raw_value
     } else {
         raw_value.abs() - 360.0
     }
@@ -271,13 +279,13 @@ mod tests {
 
             #[test]
             fn check_value() {
-                let result = AngleCounter::new(350.0, 50.0);
+                let result = AngleCounter::new(350.0, 400.0);
                 assert_eq!(result.start, 350.0);
                 assert_eq!(result.width, 50.0);
                 assert_eq!(result.angle.range_1, 350.0..360.0);
                 assert_eq!(result.angle.range_2, Some(0.0..40.0));
 
-                let result = AngleCounter::new(50.0, 40.0);
+                let result = AngleCounter::new(50.0, 90.0);
                 assert_eq!(result.start, 50.0);
                 assert_eq!(result.width, 40.0);
                 assert_eq!(result.angle.range_1, 50.0..90.0);
@@ -290,13 +298,13 @@ mod tests {
 
             #[test]
             fn checking_value() {
-                let result = AngleCounter::new(350.0, 50.0);
+                let result = AngleCounter::new(350.0, 400.0);
                 assert!(result.contains(&359.0));
                 assert!(result.contains(&0.1));
                 assert!(!result.contains(&349.0));
-                assert!(!result.contains(&51.0));
+                assert!(!result.contains(&41.0));
 
-                let result = AngleCounter::new(50.0, 40.0);
+                let result = AngleCounter::new(50.0, 90.0);
                 assert!(result.contains(&51.0));
                 assert!(result.contains(&89.0));
                 assert!(!result.contains(&49.0));
@@ -309,12 +317,119 @@ mod tests {
 
             #[test]
             fn checking_value() {
-                let result = AngleCounter::new(350.0, 50.0);
+                let result = AngleCounter::new(350.0, 400.0);
                 assert_eq!(result.end(), 40.0);
 
-                let result = AngleCounter::new(50.0, 40.0);
+                let result = AngleCounter::new(50.0, 90.0);
                 assert_eq!(result.end(), 90.0);
             }
+        }
+    }
+
+    mod percentage_counter {
+        use super::*;
+
+        mod contains {
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let result = PercentageCounter::new(0.0, 1.0f32.next_up());
+                assert!(result.contains(&1.0));
+            }
+        }
+    }
+
+    mod count_by_func_with_iter {
+        use super::*;
+
+        struct TestFilter {
+            r_range: Option<Range<f32>>,
+        }
+
+        impl TestFilter {
+            pub fn new(r_range: Option<Range<f32>>) -> TestFilter {
+                TestFilter { r_range }
+            }
+        }
+
+        impl Filter<Rgb<u8>> for TestFilter {
+            fn contains(&self, target: &Rgb<u8>) -> bool {
+                self.r_range
+                    .as_ref()
+                    .map(|v| v.contains(&(target.0[0] as f32)))
+                    .unwrap_or(true)
+            }
+            fn to_target(pixel: &Rgb<u8>) -> Rgb<u8> {
+                *pixel
+            }
+        }
+
+        fn case_rgb_image() -> RgbImage {
+            let mut image = RgbImage::new(2, 3);
+            for index_r in 0..3 {
+                let r = 20 * index_r as u8;
+                for index_b in 0..2 {
+                    let b = 30 * index_b as u8;
+
+                    let pixel = Rgb::from([r, 0, b]);
+                    image.put_pixel(index_b, index_r, pixel);
+                }
+            }
+
+            image
+        }
+
+        #[test]
+        fn checking_value() {
+            let case = case_rgb_image();
+            fn test_get_value_b(rgb: &Rgb<u8>) -> f32 {
+                rgb.0[2] as f32
+            }
+
+            let mut counters = create_counters(10, 0.0, 255.0, PercentageCounter::new);
+            let filter = TestFilter::new(None);
+
+            let filterd_avarage =
+                count_by_func_with_filter(&case, &mut counters, filter, test_get_value_b);
+            assert_eq!(filterd_avarage, 15.0);
+
+            let value_0_count = counters
+                .iter()
+                .filter(|c| c.contains(&0.0))
+                .fold(0, |acc, c| c.count + acc);
+            assert_eq!(value_0_count, 3);
+            let value_30_count = counters
+                .iter()
+                .filter(|c| c.contains(&30.0))
+                .fold(0, |acc, c| c.count + acc);
+            assert_eq!(value_30_count, 3);
+
+            let total_pixel = counters.iter().fold(0, |acc, c| c.count + acc);
+            assert_eq!(total_pixel, 6);
+
+            let mut counters = create_counters(10, 0.0, 255.0, PercentageCounter::new);
+            let r_range = 0.0..20.0f32.next_up();
+            assert!(r_range.contains(&20.0));
+            let filter = TestFilter::new(Some(r_range));
+
+            let filterd_avarage =
+                count_by_func_with_filter(&case, &mut counters, filter, test_get_value_b);
+            assert_eq!(filterd_avarage, 15.0);
+
+            let value_0_count = counters
+                .iter()
+                .filter(|c| c.contains(&0.0))
+                .fold(0, |acc, c| c.count + acc);
+            assert_eq!(value_0_count, 2);
+            let value_30_count = counters
+                .iter()
+                .filter(|c| c.contains(&30.0))
+                .fold(0, |acc, c| c.count + acc);
+            assert_eq!(value_30_count, 2);
+
+            let total_pixel = counters.iter().fold(0, |acc, c| c.count + acc);
+            assert_eq!(total_pixel, 4);
         }
     }
 
@@ -340,12 +455,25 @@ mod tests {
         fn checking_value_percentage() {
             let result = create_counters(7, 0.0, 1.0, PercentageCounter::new);
             assert_eq!(result.len(), 7);
+            assert!(result.last().map(|v| v.contains(&1.0)).unwrap());
 
             let result = create_counters(1, 0.0, 1.0, PercentageCounter::new);
             assert_eq!(result.len(), 1);
 
             let result = create_counters(100, 0.0, 1.0, PercentageCounter::new);
             assert_eq!(result.len(), 100);
+        }
+    }
+
+    mod rotate_value {
+        use super::*;
+
+        #[test]
+        fn checking_value() {
+            assert_eq!(rotate_value(0.0), 0.0);
+            assert_eq!(rotate_value(359.9), 359.9);
+            assert_eq!(rotate_value(-10.0), 350.0);
+            assert_eq!(rotate_value(380.0), 20.0);
         }
     }
 }

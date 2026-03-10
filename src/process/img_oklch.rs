@@ -32,7 +32,7 @@ fn oklch_to_adjust_rgb(
     hue: Option<u16>,
 ) -> (u8, u8, u8, f32) {
     if let Some(v) = record.get(pixel) {
-        return v.clone();
+        return *v;
     }
 
     let big_color = bigcolor::BigColor::from_rgb(pixel[0], pixel[1], pixel[2], 1.0);
@@ -48,7 +48,7 @@ fn oklch_to_adjust_rgb(
     }
 
     let rgba = oklch_to_rgb(oklch);
-    record.insert(pixel.clone(), rgba.clone());
+    record.insert(*pixel, rgba);
 
     rgba
 }

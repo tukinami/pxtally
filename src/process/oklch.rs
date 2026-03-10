@@ -55,7 +55,8 @@ pub(crate) fn process_oklch(command: &OklchCommands) -> Result<(), ProcessError>
 }
 
 fn process_lightness(rgb_image: &RgbImage, divisor: u16) {
-    let mut counters = create_counters(divisor, 0.0, 1.0, PercentageCounter::new);
+    // why `1.000001`, See `self::tests::checking_value()`.
+    let mut counters = create_counters(divisor, 0.0, 1.000001, PercentageCounter::new);
 
     let filter = OklchFilter::new(&None, &None);
 
@@ -114,4 +115,16 @@ fn pixel_to_chroma(oklch: &OKLCH) -> f32 {
 
 fn pixel_to_hue(oklch: &OKLCH) -> f32 {
     oklch.h
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn checking_value() {
+        let target = bigcolor::BigColor::from_rgb(255, 255, 255, 1.0);
+        let oklch = target.to_oklch();
+        println!("{}", oklch.l);
+        assert_eq!(oklch.l, 1.000001);
+    }
 }
