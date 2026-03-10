@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{collections::HashMap, ops::Range};
 
 use image::{Rgb, RgbImage};
 
@@ -180,15 +180,22 @@ where
     let pixels = rgb_image.pixels();
     let mut total_value = 0.0;
     let mut total_pixel = 0;
+    let mut rgb_count: HashMap<Rgb<u8>, u128> = HashMap::new();
 
     for pixel in pixels {
+        rgb_count.entry(*pixel).and_modify(|c| *c += 1).or_insert(1);
+    }
+
+    for (pixel, pixel_count) in rgb_count.iter() {
         let target = filter.filter_value(pixel, &get_value);
 
         if let Some(t) = target {
             if let Some(counter) = counters.iter_mut().find(|c| c.contains(&t)) {
-                total_value += t as f64;
-                total_pixel += 1;
-                counter.count_up();
+                total_value += t as f64 * *pixel_count as f64;
+                total_pixel += *pixel_count;
+                for _i in 0..*pixel_count {
+                    counter.count_up();
+                }
             }
         }
     }
