@@ -1,17 +1,20 @@
+use std::collections::HashMap;
+
 use crate::{
     config::ImgOklchArgs,
     process::{load_image, ProcessError},
 };
 
 use color::{Oklch, OpaqueColor, Rgba8};
-use image::Rgb;
 
 pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), ProcessError> {
     let mut rgb_image = load_image(&args.input)?;
     let pixels = rgb_image.pixels_mut();
+    let mut record = HashMap::new();
 
     for pixel in pixels {
-        let color_rgb = oklch_to_adjust_rgb(&pixel, args.lightness, args.chroma, args.hue);
+        let color_rgb =
+            oklch_to_adjust_rgb(&mut record, &pixel.0, args.lightness, args.chroma, args.hue);
         pixel.0[0] = color_rgb.r;
         pixel.0[1] = color_rgb.g;
         pixel.0[2] = color_rgb.b;
@@ -22,13 +25,19 @@ pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), ProcessError>
 }
 
 fn oklch_to_adjust_rgb(
-    pixel: &Rgb<u8>,
+    record: &mut HashMap<[u8; 3], Rgba8>,
+    pixel: &[u8; 3],
     lightness: Option<f32>,
     chroma: Option<f32>,
     hue: Option<u16>,
 ) -> Rgba8 {
-    let color_rgb = OpaqueColor::from_rgb8(pixel.0[0], pixel.0[1], pixel.0[2]);
+    if let Some(v) = record.get(pixel) {
+        return *v;
+    }
+
+    let color_rgb = OpaqueColor::from_rgb8(pixel[0], pixel[1], pixel[2]);
     let mut oklch = color_rgb.convert::<Oklch>();
+
     if let Some(l) = lightness {
         oklch.components[0] = l;
     }
@@ -38,7 +47,10 @@ fn oklch_to_adjust_rgb(
     if let Some(h) = hue {
         oklch.components[2] = h as f32;
     }
-    oklch.to_rgba8()
+    let rgba = oklch.to_rgba8();
+    record.insert(*pixel, rgba.clone());
+
+    rgba
 }
 
 #[cfg(test)]
