@@ -113,7 +113,7 @@ pub(crate) struct ImgOklchArgs {
     pub chroma: Option<f32>,
 
     /// Number of hue
-    #[arg(long, value_parser = oklch_hue_in_range)]
+    #[arg(short = 'H', long, value_parser = oklch_hue_in_range)]
     pub hue: Option<u16>,
 }
 
