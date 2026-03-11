@@ -13,17 +13,13 @@ pub(crate) trait Counter {
 pub(crate) trait Filter<T> {
     fn contains(&self, target: &T) -> bool;
     fn to_target(pixel: &Rgb<u8>) -> T;
+    fn hue_filter(&self) -> Option<&Angle>;
 
-    fn hue_filter(start_hue: &Option<u16>, end_hue: &Option<u16>) -> Option<Angle> {
+    fn create_hue_filter(start_hue: &Option<u16>, end_hue: &Option<u16>) -> Option<Angle> {
         if let Some(end) = *end_hue {
             let end = end as f32;
             let start = start_hue.unwrap_or(0) as f32;
-            let width = if end > start {
-                end - start
-            } else {
-                end + 360.0 - start
-            };
-            Some(Angle::new(start, width))
+            Some(Angle::new_with_end(start, end))
         } else {
             None
         }
@@ -51,9 +47,6 @@ pub(crate) struct Angle {
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct AngleCounter {
-    start: f32,
-    end: f32,
-    width: f32,
     angle: Angle,
     count: u128,
 }
@@ -81,18 +74,7 @@ impl Angle {
         Angle { range_1, range_2 }
     }
 
-    pub fn contains(&self, target: &f32) -> bool {
-        self.range_1.contains(target)
-            | self
-                .range_2
-                .as_ref()
-                .map(|v| v.contains(target))
-                .unwrap_or(false)
-    }
-}
-
-impl AngleCounter {
-    pub fn new(start: f32, end: f32) -> AngleCounter {
+    pub fn new_with_end(start: f32, end: f32) -> Angle {
         let start = rotate_value(start);
         let end = rotate_value(end);
 
@@ -102,15 +84,35 @@ impl AngleCounter {
             end - start
         };
 
-        let angle = Angle::new(start, width);
+        Angle::new(start, width)
+    }
 
-        AngleCounter {
-            start,
-            end,
-            width,
-            angle,
-            count: 0,
-        }
+    pub fn contains(&self, target: &f32) -> bool {
+        self.range_1.contains(target)
+            | self
+                .range_2
+                .as_ref()
+                .map(|v| v.contains(target))
+                .unwrap_or(false)
+    }
+
+    pub fn start(&self) -> f32 {
+        self.range_1.start
+    }
+
+    pub fn end(&self) -> f32 {
+        self.range_2
+            .as_ref()
+            .map(|v| v.end)
+            .unwrap_or(self.range_1.end)
+    }
+}
+
+impl AngleCounter {
+    pub fn new(start: f32, end: f32) -> AngleCounter {
+        let angle = Angle::new_with_end(start, end);
+
+        AngleCounter { angle, count: 0 }
     }
 }
 
@@ -120,11 +122,11 @@ impl Counter for AngleCounter {
     }
 
     fn start(&self) -> f32 {
-        self.start
+        self.angle.start()
     }
 
     fn end(&self) -> f32 {
-        self.end
+        self.angle.end()
     }
 
     fn count(&self) -> u128 {
@@ -174,7 +176,7 @@ impl Counter for PercentageCounter {
 pub(crate) fn count_by_func_with_filter<T, C, F, G>(
     rgb_image: &RgbImage,
     counters: &mut [C],
-    filter: F,
+    filter: &F,
     get_value: G,
 ) -> (f64, u128)
 where
@@ -234,33 +236,6 @@ where
     counters
 }
 
-pub(crate) fn print_count<T>(
-    vec: &[T],
-    width: u32,
-    height: u32,
-    filtered_total_value: f64,
-    filtered_total_pixel: u128,
-) where
-    T: Counter,
-{
-    let total_pixel = ((width * height) as f32).max(1.0);
-
-    for counter in vec.iter() {
-        let ratio = counter.count() as f32 / total_pixel * 100.0;
-
-        println!(
-            "{0:>6.2} -> {1:>6.2} : {2:>6.2}% ({3:>10} px)",
-            counter.start(),
-            counter.end(),
-            ratio,
-            counter.count()
-        )
-    }
-    let filtered_avr = filtered_total_value / filtered_total_pixel as f64;
-    println!();
-    println!(" avr : {0:>8.4}", filtered_avr);
-}
-
 fn rotate_value(raw_value: f32) -> f32 {
     if (0.0..360.0).contains(&raw_value) {
         raw_value.abs()
@@ -284,14 +259,12 @@ mod tests {
             #[test]
             fn check_value() {
                 let result = AngleCounter::new(350.0, 400.0);
-                assert_eq!(result.start, 350.0);
-                assert_eq!(result.width, 50.0);
+                assert_eq!(result.start(), 350.0);
                 assert_eq!(result.angle.range_1, 350.0..360.0);
                 assert_eq!(result.angle.range_2, Some(0.0..40.0));
 
                 let result = AngleCounter::new(50.0, 90.0);
-                assert_eq!(result.start, 50.0);
-                assert_eq!(result.width, 40.0);
+                assert_eq!(result.start(), 50.0);
                 assert_eq!(result.angle.range_1, 50.0..90.0);
                 assert_eq!(result.angle.range_2, None);
             }
@@ -313,6 +286,12 @@ mod tests {
                 assert!(result.contains(&89.0));
                 assert!(!result.contains(&49.0));
                 assert!(!result.contains(&90.1));
+
+                let result = AngleCounter::new(350.0, 400.0_f32.next_up());
+                assert!(result.contains(&40.0));
+
+                let result = AngleCounter::new(50.0, 90.0_f32.next_up());
+                assert!(result.contains(&90.0));
             }
         }
 
@@ -367,6 +346,10 @@ mod tests {
             fn to_target(pixel: &Rgb<u8>) -> Rgb<u8> {
                 *pixel
             }
+
+            fn hue_filter(&self) -> Option<&Angle> {
+                None
+            }
         }
 
         fn case_rgb_image() -> RgbImage {
@@ -395,7 +378,7 @@ mod tests {
             let filter = TestFilter::new(None);
 
             let (filtered_total_value, filtered_total_pixel) =
-                count_by_func_with_filter(&case, &mut counters, filter, test_get_value_b);
+                count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
             let filtered_avarage = filtered_total_value / filtered_total_pixel as f64;
             assert_eq!(filtered_avarage, 15.0);
 
@@ -419,7 +402,7 @@ mod tests {
             let filter = TestFilter::new(Some(r_range));
 
             let (filtered_total_value, filtered_total_pixel) =
-                count_by_func_with_filter(&case, &mut counters, filter, test_get_value_b);
+                count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
             let filtered_avarage = filtered_total_value / filtered_total_pixel as f64;
             assert_eq!(filtered_avarage, 15.0);
 

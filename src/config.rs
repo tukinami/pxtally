@@ -110,10 +110,10 @@ pub(crate) struct ChromaArgs {
 pub(crate) struct OutputArgs {
     /// Flag for standard output
     #[arg(long, default_value_t = false)]
-    no_io: bool,
+    pub no_io: bool,
     /// Output json data to path
     #[arg(long, value_name = "PATH")]
-    json: Option<PathBuf>,
+    pub json: Option<PathBuf>,
 }
 
 #[derive(Args, Debug)]

@@ -4,9 +4,9 @@ use image::{Rgb, RgbImage};
 use crate::{
     config::{AngleArgs, HslCommands, PercentageArgs},
     counter::{
-        count_by_func_with_filter, create_counters, print_count, Angle, AngleCounter, Filter,
-        PercentageCounter,
+        count_by_func_with_filter, create_counters, Angle, AngleCounter, Filter, PercentageCounter,
     },
+    output::output,
     process::{load_image, ProcessError},
 };
 
@@ -21,20 +21,21 @@ pub(crate) mod constants {
 }
 
 struct HslFilter {
-    hue: Option<Angle>,
+    hue_filter: Option<Angle>,
 }
 
 impl HslFilter {
     pub fn new(start_hue: &Option<u16>, end_hue: &Option<u16>) -> HslFilter {
-        let hue = <HslFilter as Filter<OpaqueColor<Hsl>>>::hue_filter(start_hue, end_hue);
+        let hue_filter =
+            <HslFilter as Filter<OpaqueColor<Hsl>>>::create_hue_filter(start_hue, end_hue);
 
-        HslFilter { hue }
+        HslFilter { hue_filter }
     }
 }
 
 impl Filter<OpaqueColor<Hsl>> for HslFilter {
     fn contains(&self, target: &OpaqueColor<Hsl>) -> bool {
-        self.hue
+        self.hue_filter
             .as_ref()
             .map(|v| v.contains(&target.components[0]))
             .unwrap_or(true)
@@ -44,45 +45,45 @@ impl Filter<OpaqueColor<Hsl>> for HslFilter {
         let color_rgb = OpaqueColor::from_rgb8(pixel.0[0], pixel.0[1], pixel.0[2]);
         color_rgb.convert::<Hsl>()
     }
+
+    fn hue_filter(&self) -> Option<&Angle> {
+        self.hue_filter.as_ref()
+    }
 }
 
 pub(crate) fn process_hsl(command: &HslCommands) -> Result<(), ProcessError> {
     match &command {
         HslCommands::Hue(args) => {
             let rgb_image = load_image(&args.path)?;
-            process_hue(&rgb_image, args);
+            process_hue(&rgb_image, args)?;
         }
         HslCommands::Saturation(args) => {
             let rgb_image = load_image(&args.path)?;
-            process_saturation(&rgb_image, args);
+            process_saturation(&rgb_image, args)?;
         }
         HslCommands::Lightness(args) => {
             let rgb_image = load_image(&args.path)?;
-            process_lightness(&rgb_image, args);
+            process_lightness(&rgb_image, args)?;
         }
     }
     Ok(())
 }
 
-fn process_hue(rgb_image: &RgbImage, args: &AngleArgs) {
+fn process_hue(rgb_image: &RgbImage, args: &AngleArgs) -> Result<(), ProcessError> {
     let start = (args.start % 360) as f32;
     let mut counters = create_counters(args.divisor, start, constants::HUE_MAX, AngleCounter::new);
 
     let filter = HslFilter::new(&None, &None);
 
-    let (filtered_total_value, filtered_total_pixel) =
-        count_by_func_with_filter(rgb_image, &mut counters, filter, pixel_to_hue);
+    let filtered_totals =
+        count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_hue);
 
-    print_count(
-        &counters,
-        rgb_image.width(),
-        rgb_image.height(),
-        filtered_total_value,
-        filtered_total_pixel,
-    );
+    output(&counters, rgb_image, &filter, &args.output, filtered_totals)?;
+
+    Ok(())
 }
 
-fn process_saturation(rgb_image: &RgbImage, args: &PercentageArgs) {
+fn process_saturation(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), ProcessError> {
     let mut counters = create_counters(
         args.divisor,
         constants::SATURATION_MIN,
@@ -92,19 +93,15 @@ fn process_saturation(rgb_image: &RgbImage, args: &PercentageArgs) {
 
     let filter = HslFilter::new(&None, &None);
 
-    let (filtered_total_value, filtered_total_pixel) =
-        count_by_func_with_filter(rgb_image, &mut counters, filter, pixel_to_saturation);
+    let filtered_totals =
+        count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_saturation);
 
-    print_count(
-        &counters,
-        rgb_image.width(),
-        rgb_image.height(),
-        filtered_total_value,
-        filtered_total_pixel,
-    );
+    output(&counters, rgb_image, &filter, &args.output, filtered_totals)?;
+
+    Ok(())
 }
 
-fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) {
+fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), ProcessError> {
     let mut counters = create_counters(
         args.divisor,
         constants::LIGHTNESS_MIN,
@@ -114,16 +111,12 @@ fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) {
 
     let filter = HslFilter::new(&None, &None);
 
-    let (filtered_total_value, filtered_total_pixel) =
-        count_by_func_with_filter(rgb_image, &mut counters, filter, pixel_to_lightness);
+    let filtered_totals =
+        count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_lightness);
 
-    print_count(
-        &counters,
-        rgb_image.width(),
-        rgb_image.height(),
-        filtered_total_value,
-        filtered_total_pixel,
-    );
+    output(&counters, rgb_image, &filter, &args.output, filtered_totals)?;
+
+    Ok(())
 }
 
 fn pixel_to_hue(hsl: &OpaqueColor<Hsl>) -> f32 {
