@@ -2,7 +2,7 @@ use color::{Oklch, OpaqueColor};
 use image::{Rgb, RgbImage};
 
 use crate::{
-    config::OklchCommands,
+    config::{AngleArgs, ChromaArgs, OklchCommands, PercentageArgs},
     counter::{
         count_by_func_with_filter, create_counters, print_count, Angle, AngleCounter, Filter,
         PercentageCounter,
@@ -49,23 +49,23 @@ pub(crate) fn process_oklch(command: &OklchCommands) -> Result<(), ProcessError>
     match &command {
         OklchCommands::Lightness(args) => {
             let rgb_image = load_image(&args.path)?;
-            process_lightness(&rgb_image, args.divisor);
+            process_lightness(&rgb_image, args);
         }
         OklchCommands::Chroma(args) => {
             let rgb_image = load_image(&args.path)?;
-            process_chroma(&rgb_image, args.divisor, &args.start_hue, &args.end_hue);
+            process_chroma(&rgb_image, args);
         }
         OklchCommands::Hue(args) => {
             let rgb_image = load_image(&args.path)?;
-            process_hue(&rgb_image, args.divisor, args.start);
+            process_hue(&rgb_image, args);
         }
     }
     Ok(())
 }
 
-fn process_lightness(rgb_image: &RgbImage, divisor: u16) {
+fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) {
     let mut counters = create_counters(
-        divisor,
+        args.divisor,
         constants::LIGHTNESS_MIN,
         constants::LIGHTNESS_MAX,
         PercentageCounter::new,
@@ -85,20 +85,15 @@ fn process_lightness(rgb_image: &RgbImage, divisor: u16) {
     );
 }
 
-fn process_chroma(
-    rgb_image: &RgbImage,
-    divisor: u16,
-    start_hue: &Option<u16>,
-    end_hue: &Option<u16>,
-) {
+fn process_chroma(rgb_image: &RgbImage, args: &ChromaArgs) {
     let mut counters = create_counters(
-        divisor,
+        args.divisor,
         constants::CHROMA_MIN,
         constants::CHROMA_MAX,
         PercentageCounter::new,
     );
 
-    let filter = OklchFilter::new(start_hue, end_hue);
+    let filter = OklchFilter::new(&args.start_hue, &args.end_hue);
 
     let (filtered_total_value, filtered_total_pixel) =
         count_by_func_with_filter(rgb_image, &mut counters, filter, pixel_to_chroma);
@@ -112,9 +107,9 @@ fn process_chroma(
     );
 }
 
-fn process_hue(rgb_image: &RgbImage, divisor: u16, start: u16) {
-    let start = (start % 360) as f32;
-    let mut counters = create_counters(divisor, start, constants::HUE_MAX, AngleCounter::new);
+fn process_hue(rgb_image: &RgbImage, args: &AngleArgs) {
+    let start = (args.start % 360) as f32;
+    let mut counters = create_counters(args.divisor, start, constants::HUE_MAX, AngleCounter::new);
 
     let filter = OklchFilter::new(&None, &None);
 

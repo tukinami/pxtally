@@ -51,7 +51,7 @@ pub(crate) enum OklchCommands {
 
 #[derive(Args, Debug)]
 pub(crate) struct AngleArgs {
-    /// Path to image.
+    /// Path to image
     #[arg(short, long)]
     pub path: PathBuf,
 
@@ -62,22 +62,30 @@ pub(crate) struct AngleArgs {
     /// Number at the starting position
     #[arg(short, long, default_value_t = 0, value_parser = clap::value_parser!(u16).range(0..=360))]
     pub start: u16,
+
+    /// Output method
+    #[command(flatten)]
+    pub output: OutputArgs,
 }
 
 #[derive(Args, Debug)]
 pub(crate) struct PercentageArgs {
-    /// Path to image.
+    /// Path to image
     #[arg(short, long)]
     pub path: PathBuf,
 
     /// Number of times to devide
     #[arg(short, long, default_value_t = 10, value_parser = clap::value_parser!(u16).range(1..=100))]
     pub divisor: u16,
+
+    /// Output method
+    #[command(flatten)]
+    pub output: OutputArgs,
 }
 
 #[derive(Args, Debug)]
 pub(crate) struct ChromaArgs {
-    /// Path to image.
+    /// Path to image
     #[arg(short, long)]
     pub path: PathBuf,
 
@@ -85,13 +93,27 @@ pub(crate) struct ChromaArgs {
     #[arg(short, long, default_value_t = 10, value_parser = clap::value_parser!(u16).range(1..=100))]
     pub divisor: u16,
 
-    /// Number at the starting position of the extracted hue.
+    /// Number at the starting position of the extracted hue
     #[arg(short, long, value_parser = oklch_hue_in_range)]
     pub start_hue: Option<u16>,
 
-    /// Number at the ending position of the extracted hue.
+    /// Number at the ending position of the extracted hue
     #[arg(short, long, value_parser = oklch_hue_in_range)]
     pub end_hue: Option<u16>,
+
+    /// Output method
+    #[command(flatten)]
+    pub output: OutputArgs,
+}
+
+#[derive(Args, Debug)]
+pub(crate) struct OutputArgs {
+    /// Flag for standard output
+    #[arg(long, default_value_t = false)]
+    no_io: bool,
+    /// Output json data to path
+    #[arg(long, value_name = "PATH")]
+    json: Option<PathBuf>,
 }
 
 #[derive(Args, Debug)]

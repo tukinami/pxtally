@@ -2,7 +2,7 @@ use color::{Hsl, OpaqueColor};
 use image::{Rgb, RgbImage};
 
 use crate::{
-    config::HslCommands,
+    config::{AngleArgs, HslCommands, PercentageArgs},
     counter::{
         count_by_func_with_filter, create_counters, print_count, Angle, AngleCounter, Filter,
         PercentageCounter,
@@ -50,23 +50,23 @@ pub(crate) fn process_hsl(command: &HslCommands) -> Result<(), ProcessError> {
     match &command {
         HslCommands::Hue(args) => {
             let rgb_image = load_image(&args.path)?;
-            process_hue(&rgb_image, args.divisor, args.start);
+            process_hue(&rgb_image, args);
         }
         HslCommands::Saturation(args) => {
             let rgb_image = load_image(&args.path)?;
-            process_saturation(&rgb_image, args.divisor);
+            process_saturation(&rgb_image, args);
         }
         HslCommands::Lightness(args) => {
             let rgb_image = load_image(&args.path)?;
-            process_lightness(&rgb_image, args.divisor);
+            process_lightness(&rgb_image, args);
         }
     }
     Ok(())
 }
 
-fn process_hue(rgb_image: &RgbImage, divisor: u16, start: u16) {
-    let start = (start % 360) as f32;
-    let mut counters = create_counters(divisor, start, constants::HUE_MAX, AngleCounter::new);
+fn process_hue(rgb_image: &RgbImage, args: &AngleArgs) {
+    let start = (args.start % 360) as f32;
+    let mut counters = create_counters(args.divisor, start, constants::HUE_MAX, AngleCounter::new);
 
     let filter = HslFilter::new(&None, &None);
 
@@ -82,9 +82,9 @@ fn process_hue(rgb_image: &RgbImage, divisor: u16, start: u16) {
     );
 }
 
-fn process_saturation(rgb_image: &RgbImage, divisor: u16) {
+fn process_saturation(rgb_image: &RgbImage, args: &PercentageArgs) {
     let mut counters = create_counters(
-        divisor,
+        args.divisor,
         constants::SATURATION_MIN,
         constants::SATURATION_MAX,
         PercentageCounter::new,
@@ -104,9 +104,9 @@ fn process_saturation(rgb_image: &RgbImage, divisor: u16) {
     );
 }
 
-fn process_lightness(rgb_image: &RgbImage, divisor: u16) {
+fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) {
     let mut counters = create_counters(
-        divisor,
+        args.divisor,
         constants::LIGHTNESS_MIN,
         constants::LIGHTNESS_MAX,
         PercentageCounter::new,
