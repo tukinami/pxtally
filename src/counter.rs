@@ -176,7 +176,7 @@ pub(crate) fn count_by_func_with_filter<T, C, F, G>(
     counters: &mut [C],
     filter: F,
     get_value: G,
-) -> f64
+) -> (f64, u128)
 where
     C: Counter,
     F: Filter<T>,
@@ -203,7 +203,7 @@ where
         }
     }
 
-    total_value / total_pixel as f64
+    (total_value, total_pixel)
 }
 
 pub(crate) fn create_counters<C, B>(divisor: u16, start: f32, width: f32, builder: B) -> Vec<C>
@@ -234,8 +234,13 @@ where
     counters
 }
 
-pub(crate) fn print_count<T>(vec: &[T], width: u32, height: u32, filterd_avr: f64)
-where
+pub(crate) fn print_count<T>(
+    vec: &[T],
+    width: u32,
+    height: u32,
+    filtered_total_value: f64,
+    filtered_total_pixel: u128,
+) where
     T: Counter,
 {
     let total_pixel = ((width * height) as f32).max(1.0);
@@ -251,8 +256,9 @@ where
             counter.count()
         )
     }
+    let filtered_avr = filtered_total_value / filtered_total_pixel as f64;
     println!();
-    println!(" avr : {0:>8.4}", filterd_avr);
+    println!(" avr : {0:>8.4}", filtered_avr);
 }
 
 fn rotate_value(raw_value: f32) -> f32 {
@@ -388,9 +394,10 @@ mod tests {
             let mut counters = create_counters(10, 0.0, 255.0, PercentageCounter::new);
             let filter = TestFilter::new(None);
 
-            let filterd_avarage =
+            let (filtered_total_value, filtered_total_pixel) =
                 count_by_func_with_filter(&case, &mut counters, filter, test_get_value_b);
-            assert_eq!(filterd_avarage, 15.0);
+            let filtered_avarage = filtered_total_value / filtered_total_pixel as f64;
+            assert_eq!(filtered_avarage, 15.0);
 
             let value_0_count = counters
                 .iter()
@@ -411,9 +418,10 @@ mod tests {
             assert!(r_range.contains(&20.0));
             let filter = TestFilter::new(Some(r_range));
 
-            let filterd_avarage =
+            let (filtered_total_value, filtered_total_pixel) =
                 count_by_func_with_filter(&case, &mut counters, filter, test_get_value_b);
-            assert_eq!(filterd_avarage, 15.0);
+            let filtered_avarage = filtered_total_value / filtered_total_pixel as f64;
+            assert_eq!(filtered_avarage, 15.0);
 
             let value_0_count = counters
                 .iter()

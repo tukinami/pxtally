@@ -48,7 +48,7 @@ fn oklch_to_adjust_rgb(
         oklch.components[2] = h as f32;
     }
     let rgba = oklch.to_rgba8();
-    record.insert(*pixel, rgba.clone());
+    record.insert(*pixel, rgba);
 
     rgba
 }

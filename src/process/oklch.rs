@@ -73,14 +73,15 @@ fn process_lightness(rgb_image: &RgbImage, divisor: u16) {
 
     let filter = OklchFilter::new(&None, &None);
 
-    let filterd_avr =
+    let (filtered_total_value, filtered_total_pixel) =
         count_by_func_with_filter(rgb_image, &mut counters, filter, pixel_to_lightness);
 
     print_count(
         &counters,
         rgb_image.width(),
         rgb_image.height(),
-        filterd_avr,
+        filtered_total_value,
+        filtered_total_pixel,
     );
 }
 
@@ -99,12 +100,15 @@ fn process_chroma(
 
     let filter = OklchFilter::new(start_hue, end_hue);
 
-    let filterd_avr = count_by_func_with_filter(rgb_image, &mut counters, filter, pixel_to_chroma);
+    let (filtered_total_value, filtered_total_pixel) =
+        count_by_func_with_filter(rgb_image, &mut counters, filter, pixel_to_chroma);
+
     print_count(
         &counters,
         rgb_image.width(),
         rgb_image.height(),
-        filterd_avr,
+        filtered_total_value,
+        filtered_total_pixel,
     );
 }
 
@@ -114,12 +118,15 @@ fn process_hue(rgb_image: &RgbImage, divisor: u16, start: u16) {
 
     let filter = OklchFilter::new(&None, &None);
 
-    let filterd_avr = count_by_func_with_filter(rgb_image, &mut counters, filter, pixel_to_hue);
+    let (filtered_total_value, filtered_total_pixel) =
+        count_by_func_with_filter(rgb_image, &mut counters, filter, pixel_to_hue);
+
     print_count(
         &counters,
         rgb_image.width(),
         rgb_image.height(),
-        filterd_avr,
+        filtered_total_value,
+        filtered_total_pixel,
     );
 }
 
