@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
 
+use crate::process;
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub(crate) struct Cli {
@@ -84,11 +86,11 @@ pub(crate) struct ChromaArgs {
     pub divisor: u16,
 
     /// Number at the starting position of the extracted hue.
-    #[arg(short, long, value_parser = clap::value_parser!(u16).range(0..360))]
+    #[arg(short, long, value_parser = oklch_hue_in_range)]
     pub start_hue: Option<u16>,
 
     /// Number at the ending position of the extracted hue.
-    #[arg(short, long, value_parser = clap::value_parser!(u16).range(0..360))]
+    #[arg(short, long, value_parser = oklch_hue_in_range)]
     pub end_hue: Option<u16>,
 }
 
@@ -103,24 +105,51 @@ pub(crate) struct ImgOklchArgs {
     pub output: PathBuf,
 
     /// Number of lightness.
-    #[arg(short, long, value_parser = lightness_in_range)]
+    #[arg(short, long, value_parser = oklch_lightness_in_range)]
     pub lightness: Option<f32>,
 
     /// Number of chroma.
-    #[arg(short, long, value_parser = chroma_in_range)]
+    #[arg(short, long, value_parser = oklch_chroma_in_range)]
     pub chroma: Option<f32>,
 
     /// Number of hue
-    #[arg(long, value_parser = clap::value_parser!(u16).range(0..360))]
+    #[arg(long, value_parser = oklch_hue_in_range)]
     pub hue: Option<u16>,
 }
 
-fn lightness_in_range(s: &str) -> Result<f32, String> {
-    float_in_range(s, 0.0, 1.0, "lightness")
+fn oklch_hue_in_range(s: &str) -> Result<u16, String> {
+    let value = s
+        .parse::<u16>()
+        .map_err(|_| format!("{s} is not a u16 number."))?;
+    if (process::oklch::constants::HUE_MIN..process::oklch::constants::HUE_MAX)
+        .contains(&(value as f32))
+    {
+        Ok(value)
+    } else {
+        Err(format!(
+            "hue is no in range {}-{}",
+            process::oklch::constants::HUE_MIN,
+            process::oklch::constants::HUE_MAX
+        ))
+    }
 }
 
-fn chroma_in_range(s: &str) -> Result<f32, String> {
-    float_in_range(s, 0.0, 0.4, "chroma")
+fn oklch_lightness_in_range(s: &str) -> Result<f32, String> {
+    float_in_range(
+        s,
+        process::oklch::constants::LIGHTNESS_MIN,
+        process::oklch::constants::LIGHTNESS_MAX,
+        "lightness",
+    )
+}
+
+fn oklch_chroma_in_range(s: &str) -> Result<f32, String> {
+    float_in_range(
+        s,
+        process::oklch::constants::CHROMA_MIN,
+        process::oklch::constants::CHROMA_MAX,
+        "chroma",
+    )
 }
 
 fn float_in_range(s: &str, start: f32, end_include: f32, name: &str) -> Result<f32, String> {

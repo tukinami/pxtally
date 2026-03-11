@@ -10,6 +10,16 @@ use crate::{
     process::{load_image, ProcessError},
 };
 
+pub(crate) mod constants {
+    #[allow(unused)]
+    pub(crate) const HUE_MIN: f32 = 0.0;
+    pub(crate) const HUE_MAX: f32 = 360.0;
+    pub(crate) const SATURATION_MIN: f32 = 0.0;
+    pub(crate) const SATURATION_MAX: f32 = 100.0;
+    pub(crate) const LIGHTNESS_MIN: f32 = 0.0;
+    pub(crate) const LIGHTNESS_MAX: f32 = 100.0;
+}
+
 struct HslFilter {
     hue: Option<Angle>,
 }
@@ -56,7 +66,7 @@ pub(crate) fn process_hsl(command: &HslCommands) -> Result<(), ProcessError> {
 
 fn process_hue(rgb_image: &RgbImage, divisor: u16, start: u16) {
     let start = (start % 360) as f32;
-    let mut counters = create_counters(divisor, start, 360.0, AngleCounter::new);
+    let mut counters = create_counters(divisor, start, constants::HUE_MAX, AngleCounter::new);
 
     let filter = HslFilter::new(&None, &None);
 
@@ -71,7 +81,12 @@ fn process_hue(rgb_image: &RgbImage, divisor: u16, start: u16) {
 }
 
 fn process_saturation(rgb_image: &RgbImage, divisor: u16) {
-    let mut counters = create_counters(divisor, 0.0, 100.0, PercentageCounter::new);
+    let mut counters = create_counters(
+        divisor,
+        constants::SATURATION_MIN,
+        constants::SATURATION_MAX,
+        PercentageCounter::new,
+    );
 
     let filter = HslFilter::new(&None, &None);
 
@@ -87,7 +102,12 @@ fn process_saturation(rgb_image: &RgbImage, divisor: u16) {
 }
 
 fn process_lightness(rgb_image: &RgbImage, divisor: u16) {
-    let mut counters = create_counters(divisor, 0.0, 100.0, PercentageCounter::new);
+    let mut counters = create_counters(
+        divisor,
+        constants::LIGHTNESS_MIN,
+        constants::LIGHTNESS_MAX,
+        PercentageCounter::new,
+    );
 
     let filter = HslFilter::new(&None, &None);
 

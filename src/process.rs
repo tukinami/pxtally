@@ -4,9 +4,9 @@ use image::{ImageReader, RgbImage};
 
 use crate::config::{Cli, Commands};
 
-mod hsl;
+pub(crate) mod hsl;
 mod img_oklch;
-mod oklch;
+pub(crate) mod oklch;
 
 #[derive(Debug)]
 pub(crate) enum ProcessError {

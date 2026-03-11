@@ -10,6 +10,15 @@ use crate::{
     process::{load_image, ProcessError},
 };
 
+pub(crate) mod constants {
+    pub(crate) const LIGHTNESS_MIN: f32 = 0.0;
+    pub(crate) const LIGHTNESS_MAX: f32 = 1.0;
+    pub(crate) const CHROMA_MIN: f32 = 0.0;
+    pub(crate) const CHROMA_MAX: f32 = 0.5;
+    pub(crate) const HUE_MIN: f32 = 0.0;
+    pub(crate) const HUE_MAX: f32 = 360.0;
+}
+
 struct OklchFilter {
     hue: Option<Angle>,
 }
@@ -55,7 +64,12 @@ pub(crate) fn process_oklch(command: &OklchCommands) -> Result<(), ProcessError>
 }
 
 fn process_lightness(rgb_image: &RgbImage, divisor: u16) {
-    let mut counters = create_counters(divisor, 0.0, 1.0, PercentageCounter::new);
+    let mut counters = create_counters(
+        divisor,
+        constants::LIGHTNESS_MIN,
+        constants::LIGHTNESS_MAX,
+        PercentageCounter::new,
+    );
 
     let filter = OklchFilter::new(&None, &None);
 
@@ -76,7 +90,12 @@ fn process_chroma(
     start_hue: &Option<u16>,
     end_hue: &Option<u16>,
 ) {
-    let mut counters = create_counters(divisor, 0.0, 0.5, PercentageCounter::new);
+    let mut counters = create_counters(
+        divisor,
+        constants::CHROMA_MIN,
+        constants::CHROMA_MAX,
+        PercentageCounter::new,
+    );
 
     let filter = OklchFilter::new(start_hue, end_hue);
 
@@ -91,7 +110,7 @@ fn process_chroma(
 
 fn process_hue(rgb_image: &RgbImage, divisor: u16, start: u16) {
     let start = (start % 360) as f32;
-    let mut counters = create_counters(divisor, start, 360.0, AngleCounter::new);
+    let mut counters = create_counters(divisor, start, constants::HUE_MAX, AngleCounter::new);
 
     let filter = OklchFilter::new(&None, &None);
 
