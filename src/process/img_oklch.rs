@@ -5,7 +5,7 @@ use crate::{
     process::{load_image, ProcessError},
 };
 
-use bigcolor::color_space::oklch_to_rgb;
+use color::{Oklch, OpaqueColor, Rgba8};
 
 pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), ProcessError> {
     let mut rgb_image = load_image(&args.input)?;
@@ -13,11 +13,11 @@ pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), ProcessError>
     let mut record = HashMap::new();
 
     for pixel in pixels {
-        let (r, g, b, _a) =
+        let color_rgb =
             oklch_to_adjust_rgb(&mut record, &pixel.0, args.lightness, args.chroma, args.hue);
-        pixel.0[0] = r;
-        pixel.0[1] = g;
-        pixel.0[2] = b;
+        pixel.0[0] = color_rgb.r;
+        pixel.0[1] = color_rgb.g;
+        pixel.0[2] = color_rgb.b;
     }
 
     rgb_image.save(&args.output)?;
@@ -25,30 +25,30 @@ pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), ProcessError>
 }
 
 fn oklch_to_adjust_rgb(
-    record: &mut HashMap<[u8; 3], (u8, u8, u8, f32)>,
+    record: &mut HashMap<[u8; 3], Rgba8>,
     pixel: &[u8; 3],
     lightness: Option<f32>,
     chroma: Option<f32>,
     hue: Option<u16>,
-) -> (u8, u8, u8, f32) {
+) -> Rgba8 {
     if let Some(v) = record.get(pixel) {
         return *v;
     }
 
-    let big_color = bigcolor::BigColor::from_rgb(pixel[0], pixel[1], pixel[2], 1.0);
-    let mut oklch = big_color.to_oklch();
+    let color_rgb = OpaqueColor::from_rgb8(pixel[0], pixel[1], pixel[2]);
+    let mut oklch = color_rgb.convert::<Oklch>();
+
     if let Some(l) = lightness {
-        oklch.l = l;
+        oklch.components[0] = l;
     }
     if let Some(c) = chroma {
-        oklch.c = c;
+        oklch.components[1] = c;
     }
     if let Some(h) = hue {
-        oklch.h = h as f32;
+        oklch.components[2] = h as f32;
     }
-
-    let rgba = oklch_to_rgb(oklch);
-    record.insert(*pixel, rgba);
+    let rgba = oklch.to_rgba8();
+    record.insert(*pixel, rgba.clone());
 
     rgba
 }
@@ -66,6 +66,16 @@ mod tests {
         fn check_file() {
             let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test_target");
             let base_file = base_dir.join("base.png");
+
+            let args = create_args(
+                &base_dir,
+                &base_file,
+                "test_l050_c015.png",
+                None,
+                None,
+                None,
+            );
+            assert!(process_img_oklch(&args).is_ok());
 
             let args = create_args(
                 &base_dir,
