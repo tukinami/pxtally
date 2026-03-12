@@ -217,20 +217,18 @@ where
         return counters;
     }
 
-    let quotient = width / divisor as f32;
-    let mut target_value = 0.0;
+    let start = start as f64;
+    let quotient = width as f64 / divisor as f64;
 
-    for _i in 0..divisor - 1 {
-        let start_value = start + target_value;
-        let end_value = start_value + quotient;
-        let counter = builder(start_value, end_value);
+    for i in 0..divisor - 1 {
+        let start_value = quotient.mul_add(i as f64, start);
+        let end_value = quotient.mul_add(i as f64 + 1.0, start);
+        let counter = builder(start_value as f32, end_value as f32);
         counters.push(counter);
-        target_value += quotient;
     }
-
-    let start_value = start + target_value;
-    let end_value = start + width;
-    let counter = builder(start_value, end_value.next_up());
+    let start_value = quotient.mul_add((divisor - 1) as f64, start);
+    let end_value = start + width as f64;
+    let counter = builder(start_value as f32, (end_value as f32).next_up());
     counters.push(counter);
 
     counters
