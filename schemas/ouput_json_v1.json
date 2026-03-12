@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tukinami/pxtally/schemas/ouput_json_v1.json",
+  "title": "pxtally output",
+  "description": "Schema for pxtally JSON output (schema_version: 1)",
+  "type": "object",
+  "required": ["tool_name", "tool_version", "schema_version", "image", "analysis"],
+  "additionalProperties": false,
+  "properties": {
+    "tool_name": {
+      "description": "Name of the tool",
+      "type": "string",
+      "const": "pxtally"
+    },
+    "tool_version": {
+      "description": "Version of the tool (SemVer)",
+      "type": "string",
+      "examples": ["1.0.2"]
+    },
+    "schema_version": {
+      "description": "Version of this JSON schema",
+      "type": "integer",
+      "const": 1
+    },
+    "image": {
+      "description": "Metadata of the analyzed image",
+      "type": "object",
+      "required": ["width", "height", "pixels"],
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "description": "Image width in pixels",
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "description": "Image height in pixels",
+          "type": "integer",
+          "minimum": 1
+        },
+        "pixels": {
+          "description": "Total number of pixels (width * height)",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "analysis": {
+      "description": "Analysis result",
+      "type": "object",
+      "required": ["color_space", "component", "interval_type", "ranges", "bins", "stats"],
+      "additionalProperties": false,
+      "properties": {
+        "color_space": {
+          "description": "Color space used for analysis",
+          "type": "string",
+          "enum": ["hsl", "oklch"]
+        },
+        "component": {
+          "description": "Component of the color space used for analysis",
+          "type": "string",
+          "examples": ["hue", "saturation", "lightness", "chroma"]
+        },
+        "interval_type": {
+          "description": "Interval type of bins. All bins use half-open intervals [start, end), where range_end of the last bin is nextUp(max_value) in IEEE-754.",
+          "type": "string",
+          "const": "[start,end)"
+        },
+        "ranges": {
+          "description": "Optional constraints applied to components before analysis. Empty object if no constraints are applied.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hue": {
+              "description": "Hue range constraint",
+              "type": "object",
+              "required": ["start", "end"],
+              "additionalProperties": false,
+              "properties": {
+                "start": {
+                  "description": "Start of hue range (inclusive). Follows interval_type.",
+                  "type": "number"
+                },
+                "end": {
+                  "description": "End of hue range. Follows interval_type.",
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "bins": {
+          "description": "List of bins with pixel count and ratio for each range",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["range_start", "range_end", "ratio", "pixel_count"],
+            "additionalProperties": false,
+            "properties": {
+              "range_start": {
+                "description": "Start of the range (inclusive)",
+                "type": "number"
+              },
+              "range_end": {
+                "description": "End of the range (exclusive). The last bin uses nextUp(max_value) in IEEE-754.",
+                "type": "number"
+              },
+              "ratio": {
+                "description": "Ratio of pixels in this bin to total pixels (0.0 to 1.0)",
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0
+              },
+              "pixel_count": {
+                "description": "Number of pixels in this bin",
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "stats": {
+          "description": "Statistical summary of the analysis",
+          "type": "object",
+          "required": ["average"],
+          "additionalProperties": false,
+          "properties": {
+            "average": {
+              "description": "Weighted average of the component values across all pixels",
+              "type": "number"
+            }
+          }
+        }
+      }
+    }
+  }
+}

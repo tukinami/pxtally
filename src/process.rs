@@ -2,31 +2,14 @@ use std::path::Path;
 
 use image::{ImageReader, RgbImage};
 
-use crate::config::{Cli, Commands};
+use crate::{
+    config::{Cli, Commands},
+    error::PxTallyError,
+};
 
 pub(crate) mod hsl;
 mod img_oklch;
 pub(crate) mod oklch;
-
-#[derive(Debug)]
-pub(crate) enum ProcessError {
-    #[allow(unused)]
-    ImageError(image::ImageError),
-    #[allow(unused)]
-    Io(std::io::Error),
-}
-
-impl From<image::ImageError> for ProcessError {
-    fn from(value: image::ImageError) -> Self {
-        Self::ImageError(value)
-    }
-}
-
-impl From<std::io::Error> for ProcessError {
-    fn from(value: std::io::Error) -> Self {
-        Self::Io(value)
-    }
-}
 
 pub(crate) fn process(cli: &Cli) {
     if let Err(e) = process_body(cli) {
@@ -34,7 +17,7 @@ pub(crate) fn process(cli: &Cli) {
     }
 }
 
-fn process_body(cli: &Cli) -> Result<(), ProcessError> {
+fn process_body(cli: &Cli) -> Result<(), PxTallyError> {
     match &cli.command {
         Commands::Hsl(command) => hsl::process_hsl(command),
         Commands::Oklch(command) => oklch::process_oklch(command),
@@ -42,7 +25,7 @@ fn process_body(cli: &Cli) -> Result<(), ProcessError> {
     }
 }
 
-pub(crate) fn load_image<P>(path: P) -> Result<RgbImage, ProcessError>
+pub(crate) fn load_image<P>(path: P) -> Result<RgbImage, PxTallyError>
 where
     P: AsRef<Path>,
 {
