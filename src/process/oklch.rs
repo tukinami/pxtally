@@ -82,7 +82,7 @@ fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), 
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_lightness);
 
     output(
-        "OKLCH",
+        "oklch",
         "lightness",
         &counters,
         rgb_image,
@@ -108,7 +108,7 @@ fn process_chroma(rgb_image: &RgbImage, args: &ChromaArgs) -> Result<(), Process
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_chroma);
 
     output(
-        "OKLCH",
+        "oklch",
         "chroma",
         &counters,
         rgb_image,
@@ -130,7 +130,7 @@ fn process_hue(rgb_image: &RgbImage, args: &AngleArgs) -> Result<(), ProcessErro
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_hue);
 
     output(
-        "OKLCH",
+        "oklch",
         "hue",
         &counters,
         rgb_image,

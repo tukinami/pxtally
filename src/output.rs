@@ -1,6 +1,7 @@
-use std::path::PathBuf;
+use std::collections::HashMap;
 
 use image::RgbImage;
+use serde::Serialize;
 
 use crate::{
     config::OutputArgs,
@@ -8,37 +9,39 @@ use crate::{
     process::ProcessError,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct OutputJson {
     tool_name: String,
-    version: String,
+    tool_version: String,
+    schema_version: u32,
     image: ImageData,
     analysis: AnalysisData,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct ImageData {
-    path: PathBuf,
     width: u32,
     height: u32,
     pixels: u128,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct AnalysisData {
-    colorspace: String,
-    components: String,
-    hue_range: Option<HueRange>,
+    color_space: String,
+    component: String,
+    interval_type: String,
+    ranges: HashMap<String, FilterRange>,
     bins: Vec<BinData>,
+    stats: Stats,
 }
 
-#[derive(Debug)]
-struct HueRange {
+#[derive(Debug, Serialize)]
+struct FilterRange {
     start: f32,
     end: f32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct BinData {
     range_start: f32,
     range_end: f32,
@@ -46,43 +49,47 @@ struct BinData {
     pixel_count: u128,
 }
 
+#[derive(Debug, Serialize)]
+struct Stats {
+    average: f64,
+}
+
 impl OutputJson {
     pub fn new<C, F, T>(
-        path: PathBuf,
-        colorspace_name: &str,
-        components_name: &str,
+        color_space_name: &str,
+        component_name: &str,
         counters: &[C],
         rgb_image: &RgbImage,
         filter: &F,
-        _output_args: &OutputArgs,
-        (_filtered_total_value, _filtered_total_pixel): (f64, u128),
+        filtered_totals: (f64, u128),
     ) -> OutputJson
     where
         C: Counter,
         F: Filter<T>,
     {
         let tool_name = env!("CARGO_BIN_NAME").to_string();
-        let version = env!("CARGO_PKG_VERSION").to_string();
+        let tool_version = env!("CARGO_PKG_VERSION").to_string();
+        let schema_version = 1;
 
         let width = rgb_image.width();
         let height = rgb_image.height();
-        let pixels = width as u128 * height as u128;
+        let pixels = (width as u128 * height as u128).max(1);
 
-        let image = ImageData::new(path, width, height, pixels);
+        let image = ImageData::new(width, height, pixels);
 
         let analysis = AnalysisData::new(
-            colorspace_name,
-            components_name,
-            width,
-            height,
+            color_space_name,
+            component_name,
             pixels,
             filter,
             counters,
+            filtered_totals,
         );
 
         OutputJson {
             tool_name,
-            version,
+            tool_version,
+            schema_version,
             image,
             analysis,
         }
@@ -90,9 +97,8 @@ impl OutputJson {
 }
 
 impl ImageData {
-    pub fn new(path: PathBuf, width: u32, height: u32, pixels: u128) -> ImageData {
+    pub fn new(width: u32, height: u32, pixels: u128) -> ImageData {
         ImageData {
-            path,
             width,
             height,
             pixels,
@@ -102,36 +108,47 @@ impl ImageData {
 
 impl AnalysisData {
     pub fn new<C, F, T>(
-        colorspace_name: &str,
-        components_name: &str,
-        width: u32,
-        height: u32,
+        color_space_name: &str,
+        component_name: &str,
         total_pixel: u128,
         filter: &F,
         counters: &[C],
+        filtered_tolals: (f64, u128),
     ) -> AnalysisData
     where
         C: Counter,
         F: Filter<T>,
     {
-        let colorspace = colorspace_name.to_string();
-        let components = components_name.to_string();
+        let color_space = color_space_name.to_string();
+        let component = component_name.to_string();
 
-        let hue_range = filter.hue_filter().map(|v| HueRange {
-            start: v.start(),
-            end: v.end(),
-        });
+        let mut ranges = HashMap::new();
+        if let Some(hue_range) = filter.hue_filter() {
+            ranges.insert(
+                "hue".to_string(),
+                FilterRange {
+                    start: hue_range.start(),
+                    end: hue_range.end(),
+                },
+            );
+        }
+
+        let interval_type = "[start,end)".to_string();
 
         let bins: Vec<BinData> = counters
             .iter()
             .map(|c| BinData::new(c, total_pixel))
             .collect();
 
+        let stats = Stats::new(filtered_tolals);
+
         AnalysisData {
-            colorspace,
-            components,
-            hue_range,
+            color_space,
+            component,
+            ranges,
+            interval_type,
             bins,
+            stats,
         }
     }
 }
@@ -155,51 +172,57 @@ impl BinData {
     }
 }
 
+impl Stats {
+    pub fn new((filtered_total_value, filtered_total_pixel): (f64, u128)) -> Stats {
+        let average = filtered_total_value / filtered_total_pixel as f64;
+
+        Stats { average }
+    }
+}
+
 pub(crate) fn output<C, F, T>(
-    colorspace_name: &str,
-    components_name: &str,
+    color_space_name: &str,
+    component_name: &str,
     vec: &[C],
     rgb_image: &RgbImage,
     filter: &F,
     output_args: &OutputArgs,
-    (filtered_total_value, filtered_total_pixel): (f64, u128),
+    filtered_total: (f64, u128),
 ) -> Result<(), ProcessError>
 where
     C: Counter,
     F: Filter<T>,
 {
     if !output_args.no_io {
-        print_count(
-            colorspace_name,
-            components_name,
+        output_io(
+            color_space_name,
+            component_name,
             vec,
             rgb_image.width(),
             rgb_image.height(),
             filter,
-            filtered_total_value,
-            filtered_total_pixel,
+            filtered_total,
         );
     }
 
     Ok(())
 }
 
-fn print_count<C, F, T>(
-    colorspace_name: &str,
-    components_name: &str,
+fn output_io<C, F, T>(
+    color_space_name: &str,
+    component_name: &str,
     vec: &[C],
     width: u32,
     height: u32,
     filter: &F,
-    filtered_total_value: f64,
-    filtered_total_pixel: u128,
+    (filtered_total_value, filtered_total_pixel): (f64, u128),
 ) where
     C: Counter,
     F: Filter<T>,
 {
     let total_pixel = ((width * height) as f32).max(1.0);
 
-    println!("{} {}", colorspace_name, components_name);
+    println!("{} {}", color_space_name, component_name);
 
     if let Some(hue_filter) = filter.hue_filter() {
         println!(
@@ -223,4 +246,105 @@ fn print_count<C, F, T>(
     let filtered_avr = filtered_total_value / filtered_total_pixel as f64;
     println!();
     println!(" avr : {0:>8.4}", filtered_avr);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod output_json {
+        use std::ops::Range;
+
+        use image::Rgb;
+
+        use crate::counter::{
+            count_by_func_with_filter, create_counters, Angle, PercentageCounter,
+        };
+
+        use super::*;
+
+        struct TestFilter {
+            r_range: Option<Range<f32>>,
+            hue_range: Option<Angle>,
+        }
+
+        impl TestFilter {
+            pub fn new(r_range: Option<Range<f32>>, hue_range: Option<Angle>) -> TestFilter {
+                TestFilter { r_range, hue_range }
+            }
+        }
+
+        impl Filter<Rgb<u8>> for TestFilter {
+            fn contains(&self, target: &Rgb<u8>) -> bool {
+                self.r_range
+                    .as_ref()
+                    .map(|v| v.contains(&(target.0[0] as f32)))
+                    .unwrap_or(true)
+            }
+            fn to_target(pixel: &Rgb<u8>) -> Rgb<u8> {
+                *pixel
+            }
+
+            fn hue_filter(&self) -> Option<&Angle> {
+                self.hue_range.as_ref()
+            }
+        }
+
+        fn case_rgb_image() -> RgbImage {
+            let mut image = RgbImage::new(2, 3);
+            for index_r in 0..3 {
+                let r = 20 * index_r as u8;
+                for index_b in 0..2 {
+                    let b = 30 * index_b as u8;
+
+                    let pixel = Rgb::from([r, 0, b]);
+                    image.put_pixel(index_b, index_r, pixel);
+                }
+            }
+
+            image
+        }
+
+        fn test_get_value_b(rgb: &Rgb<u8>) -> f32 {
+            rgb.0[2] as f32
+        }
+
+        #[test]
+        fn checking_value() {
+            assert!(checking_case_001().is_ok());
+            assert!(checking_case_002().is_ok());
+        }
+
+        fn checking_case_001() -> Result<String, serde_json::Error> {
+            let case = case_rgb_image();
+            let mut counters = create_counters(10, 0.0, 255.0, PercentageCounter::new);
+            let filter = TestFilter::new(None, None);
+            let filtererd_totals =
+                count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
+
+            let output_json =
+                OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals);
+
+            serde_json::to_string(&output_json)
+        }
+
+        fn checking_case_002() -> Result<String, serde_json::Error> {
+            let case = case_rgb_image();
+            let mut counters = create_counters(10, 0.0, 255.0, PercentageCounter::new);
+            let filter = TestFilter::new(
+                Some(Range {
+                    start: 0.0,
+                    end: 20.0_f32.next_up(),
+                }),
+                Some(Angle::new(0.0, 20.0_f32.next_up())),
+            );
+            let filtererd_totals =
+                count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
+
+            let output_json =
+                OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals);
+
+            serde_json::to_string(&output_json)
+        }
+    }
 }

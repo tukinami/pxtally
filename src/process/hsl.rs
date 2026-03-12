@@ -79,7 +79,7 @@ fn process_hue(rgb_image: &RgbImage, args: &AngleArgs) -> Result<(), ProcessErro
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_hue);
 
     output(
-        "HSL",
+        "hsl",
         "hue",
         &counters,
         rgb_image,
@@ -105,7 +105,7 @@ fn process_saturation(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(),
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_saturation);
 
     output(
-        "HSL",
+        "hsl",
         "saturation",
         &counters,
         rgb_image,
@@ -131,7 +131,7 @@ fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), 
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_lightness);
 
     output(
-        "HSL",
+        "hsl",
         "lightness",
         &counters,
         rgb_image,
