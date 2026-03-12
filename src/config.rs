@@ -117,6 +117,9 @@ pub(crate) struct OutputArgs {
     /// Write results as JSON to the specified file
     #[arg(long, value_name = "PATH")]
     pub json_output: Option<PathBuf>,
+    /// Force overwrite output file if it already exists
+    #[arg(long)]
+    pub force: bool,
 }
 
 #[derive(Args, Debug)]

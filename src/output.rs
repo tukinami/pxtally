@@ -1,4 +1,9 @@
-use std::{collections::HashMap, fs::File, io::Write};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use image::RgbImage;
 use serde::Serialize;
@@ -182,6 +187,32 @@ impl Stats {
     }
 }
 
+pub(crate) fn confirm_and_run<P, F>(path: P, f: F) -> Result<(), PxTallyError>
+where
+    P: AsRef<Path>,
+    F: FnOnce() -> Result<(), PxTallyError>,
+{
+    let mut stdout = std::io::stdout();
+    let stdin = std::io::stdin();
+
+    let mut input = String::new();
+
+    loop {
+        println!("{} already exists.", path.as_ref().display());
+        print!("Overwrite? [yes/no]: ");
+        stdout.flush()?;
+
+        input.clear();
+        stdin.read_line(&mut input)?;
+
+        match input.trim().to_lowercase().as_str() {
+            "yes" | "y" => return f(),
+            "no" | "n" => return Ok(()),
+            _ => println!("Please answer yes or no."),
+        }
+    }
+}
+
 pub(crate) fn output<C, F, T>(
     color_space_name: &str,
     component_name: &str,
@@ -249,10 +280,20 @@ where
         }
 
         if let Some(path) = output_args.json_output.as_ref() {
-            let mut file = File::create(path)?;
-            file.write_all(json_string.as_bytes())?;
+            if path.exists() && !output_args.force {
+                confirm_and_run(path, || write_json(path, json_string.as_str()))?;
+            } else {
+                write_json(path, json_string.as_str())?;
+            }
         }
     }
+
+    Ok(())
+}
+
+fn write_json(path: &PathBuf, json_string: &str) -> Result<(), PxTallyError> {
+    let mut file = File::create(path)?;
+    file.write_all(json_string.as_bytes())?;
 
     Ok(())
 }
