@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::File, io::Write, path::PathBuf};
+use std::{collections::HashMap, fs::File, io::Write};
 
 use image::RgbImage;
 use serde::Serialize;
@@ -193,20 +193,18 @@ where
     C: Counter,
     F: Filter<T>,
 {
-    if let Some(path) = output_args.json.as_ref() {
-        output_json(
-            path,
-            color_space_name,
-            component_name,
-            counters,
-            rgb_image,
-            filter,
-            filtered_totals,
-        )?;
-    }
+    output_json(
+        output_args,
+        color_space_name,
+        component_name,
+        counters,
+        rgb_image,
+        filter,
+        filtered_totals,
+    )?;
 
-    if !output_args.no_io {
-        output_io(
+    if !output_args.no_print {
+        output_stdout(
             color_space_name,
             component_name,
             counters,
@@ -221,7 +219,7 @@ where
 }
 
 fn output_json<C, F, T>(
-    path: &PathBuf,
+    output_args: &OutputArgs,
     color_space_name: &str,
     component_name: &str,
     counters: &[C],
@@ -233,23 +231,31 @@ where
     C: Counter,
     F: Filter<T>,
 {
-    let json_struct = OutputJson::new(
-        color_space_name,
-        component_name,
-        counters,
-        rgb_image,
-        filter,
-        filtered_totals,
-    );
-    let json_string = serde_json::to_string(&json_struct)?;
+    if output_args.json || output_args.json_output.is_some() {
+        let json_struct = OutputJson::new(
+            color_space_name,
+            component_name,
+            counters,
+            rgb_image,
+            filter,
+            filtered_totals,
+        );
+        let json_string = serde_json::to_string(&json_struct)?;
 
-    let mut file = File::create(path)?;
-    file.write_all(json_string.as_bytes())?;
+        if output_args.json {
+            println!("{}", json_string);
+        }
+
+        if let Some(path) = output_args.json_output.as_ref() {
+            let mut file = File::create(path)?;
+            file.write_all(json_string.as_bytes())?;
+        }
+    }
 
     Ok(())
 }
 
-fn output_io<C, F, T>(
+fn output_stdout<C, F, T>(
     color_space_name: &str,
     component_name: &str,
     vec: &[C],

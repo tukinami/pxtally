@@ -14,10 +14,10 @@ pub(crate) struct Cli {
 #[derive(Subcommand, Debug)]
 pub(crate) enum Commands {
     #[command(subcommand)]
-    /// Under HSL
+    /// Analyze under HSL color space
     Hsl(HslCommands),
     #[command(subcommand)]
-    /// Under OKLCH
+    /// Analyze under OKLCH color space
     Oklch(OklchCommands),
     /// Output the image processed under OKLCH
     ImgOklch(ImgOklchArgs),
@@ -32,7 +32,7 @@ pub(crate) enum HslCommands {
     /// About saturation
     Saturation(PercentageArgs),
     #[command(short_flag = 'l')]
-    /// About ligntness
+    /// About lightness
     Lightness(PercentageArgs),
 }
 
@@ -55,11 +55,11 @@ pub(crate) struct AngleArgs {
     #[arg(short, long)]
     pub path: PathBuf,
 
-    /// Number of times to devide
+    /// Number of divisions for the range
     #[arg(short, long, default_value_t = 12, value_parser = clap::value_parser!(u16).range(1..=360))]
     pub divisor: u16,
 
-    /// Number at the starting position
+    /// Start of the range
     #[arg(short, long, default_value_t = 0, value_parser = clap::value_parser!(u16).range(0..=360))]
     pub start: u16,
 
@@ -74,7 +74,7 @@ pub(crate) struct PercentageArgs {
     #[arg(short, long)]
     pub path: PathBuf,
 
-    /// Number of times to devide
+    /// Number of divisions for the range
     #[arg(short, long, default_value_t = 10, value_parser = clap::value_parser!(u16).range(1..=100))]
     pub divisor: u16,
 
@@ -89,15 +89,15 @@ pub(crate) struct ChromaArgs {
     #[arg(short, long)]
     pub path: PathBuf,
 
-    /// Number of times to devide
+    /// Number of divisions for the range
     #[arg(short, long, default_value_t = 10, value_parser = clap::value_parser!(u16).range(1..=100))]
     pub divisor: u16,
 
-    /// Number at the starting position of the extracted hue
+    /// Start of the hue range to extract
     #[arg(short, long, value_parser = oklch_hue_in_range)]
     pub start_hue: Option<u16>,
 
-    /// Number at the ending position of the extracted hue
+    /// End of the hue range to extract
     #[arg(short, long, value_parser = oklch_hue_in_range)]
     pub end_hue: Option<u16>,
 
@@ -108,33 +108,36 @@ pub(crate) struct ChromaArgs {
 
 #[derive(Args, Debug)]
 pub(crate) struct OutputArgs {
-    /// Flag for standard output
-    #[arg(long, default_value_t = false)]
-    pub no_io: bool,
-    /// Output json data to path
+    /// Suppress formatted output to stdout
+    #[arg(long)]
+    pub no_print: bool,
+    /// Output results as JSON to stdout
+    #[arg(long)]
+    pub json: bool,
+    /// Write results as JSON to the specified file
     #[arg(long, value_name = "PATH")]
-    pub json: Option<PathBuf>,
+    pub json_output: Option<PathBuf>,
 }
 
 #[derive(Args, Debug)]
 pub(crate) struct ImgOklchArgs {
-    /// Path to input image.
+    /// Path to input image
     #[arg(short, long)]
     pub input: PathBuf,
 
-    /// Path to output image.
+    /// Path to output image
     #[arg(short, long)]
     pub output: PathBuf,
 
-    /// Number of lightness.
+    /// Override value for lightness
     #[arg(short, long, value_parser = oklch_lightness_in_range)]
     pub lightness: Option<f32>,
 
-    /// Number of chroma.
+    /// Override value for chroma
     #[arg(short, long, value_parser = oklch_chroma_in_range)]
     pub chroma: Option<f32>,
 
-    /// Number of hue
+    /// Override value for hue
     #[arg(short = 'H', long, value_parser = oklch_hue_in_range)]
     pub hue: Option<u16>,
 }
@@ -149,7 +152,7 @@ fn oklch_hue_in_range(s: &str) -> Result<u16, String> {
         Ok(value)
     } else {
         Err(format!(
-            "hue is no in range {}-{}",
+            "hue is not in range {}-{}",
             process::oklch::constants::HUE_MIN,
             process::oklch::constants::HUE_MAX
         ))
@@ -181,6 +184,9 @@ fn float_in_range(s: &str, start: f32, end_include: f32, name: &str) -> Result<f
     if (start..=end_include).contains(&value) {
         Ok(value)
     } else {
-        Err(format!("{} not in range {}-{}", name, start, end_include))
+        Err(format!(
+            "{} is not in range {}-{}",
+            name, start, end_include
+        ))
     }
 }
