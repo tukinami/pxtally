@@ -143,6 +143,10 @@ pub(crate) struct ImgOklchArgs {
     /// Override value for hue
     #[arg(short = 'H', long, value_parser = oklch_hue_in_range)]
     pub hue: Option<u16>,
+
+    /// Force overwrite output file if it already exists
+    #[arg(long)]
+    pub force: bool,
 }
 
 fn oklch_hue_in_range(s: &str) -> Result<u16, String> {

@@ -1,8 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
-use crate::{config::ImgOklchArgs, error::PxTallyError, process::load_image};
+use crate::{
+    config::ImgOklchArgs, error::PxTallyError, output::confirm_and_run, process::load_image,
+};
 
 use color::{Oklch, OpaqueColor, Rgba8};
+use image::RgbImage;
 
 pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), PxTallyError> {
     let mut rgb_image = load_image(&args.input)?;
@@ -17,7 +20,17 @@ pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), PxTallyError>
         pixel.0[2] = color_rgb.b;
     }
 
-    rgb_image.save(&args.output)?;
+    if args.output.exists() && !args.force {
+        confirm_and_run(&args.output, || write_rgb_image(&args.output, &rgb_image))?;
+    } else {
+        write_rgb_image(&args.output, &rgb_image)?;
+    }
+
+    Ok(())
+}
+
+fn write_rgb_image(path: &PathBuf, rgb_image: &RgbImage) -> Result<(), PxTallyError> {
+    rgb_image.save(path)?;
     Ok(())
 }
 
@@ -161,6 +174,7 @@ mod tests {
                 lightness,
                 chroma,
                 hue,
+                force: true,
             }
         }
     }
