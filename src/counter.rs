@@ -19,7 +19,7 @@ pub(crate) trait Filter<T> {
         if let Some(end) = *end_hue {
             let end = end as f32;
             let start = start_hue.unwrap_or(0) as f32;
-            Some(Angle::new_with_end(start, end))
+            Some(Angle::new(start, end))
         } else {
             None
         }
@@ -60,39 +60,27 @@ pub(crate) struct PercentageCounter {
 }
 
 impl Angle {
-    pub fn new(start: f32, width: f32) -> Angle {
+    pub fn new(start: f32, end: f32) -> Angle {
         let start = rotate_value(start);
-        let width = rotate_value(width);
+        let end = rotate_value(end);
 
-        let (range_1, range_2) = if start + width >= 360.0 {
-            let remain = start + width - 360.0;
-            (start..360.0, Some(0.0..remain))
+        let (range_1, range_2) = if start > end {
+            (start..360.0, Some(0.0..end))
         } else {
-            (start..start + width, None)
+            (start..end, None)
         };
 
         Angle { range_1, range_2 }
     }
 
-    pub fn new_with_end(start: f32, end: f32) -> Angle {
-        let start = rotate_value(start);
-        let end = rotate_value(end);
-
-        let width = if start > end {
-            360.0 - start + end
-        } else {
-            end - start
-        };
-
-        Angle::new(start, width)
-    }
-
     pub fn contains(&self, target: &f32) -> bool {
-        self.range_1.contains(target)
+        let target = rotate_value(*target);
+
+        self.range_1.contains(&target)
             | self
                 .range_2
                 .as_ref()
-                .map(|v| v.contains(target))
+                .map(|v| v.contains(&target))
                 .unwrap_or(false)
     }
 
@@ -110,7 +98,7 @@ impl Angle {
 
 impl AngleCounter {
     pub fn new(start: f32, end: f32) -> AngleCounter {
-        let angle = Angle::new_with_end(start, end);
+        let angle = Angle::new(start, end);
 
         AngleCounter { angle, count: 0 }
     }
@@ -303,6 +291,9 @@ mod tests {
 
                 let result = AngleCounter::new(50.0, 90.0);
                 assert_eq!(result.end(), 90.0);
+
+                let result = AngleCounter::new(350.0, 360.0_f32.next_up());
+                assert_eq!(result.end(), rotate_value(360.0_f32.next_up()));
             }
         }
     }
