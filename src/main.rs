@@ -4,6 +4,7 @@ use config::Cli;
 
 mod config;
 mod counter;
+mod error;
 mod output;
 mod process;
 

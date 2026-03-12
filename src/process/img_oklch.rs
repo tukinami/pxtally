@@ -1,13 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{
-    config::ImgOklchArgs,
-    process::{load_image, ProcessError},
-};
+use crate::{config::ImgOklchArgs, error::PxTallyError, process::load_image};
 
 use color::{Oklch, OpaqueColor, Rgba8};
 
-pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), ProcessError> {
+pub(crate) fn process_img_oklch(args: &ImgOklchArgs) -> Result<(), PxTallyError> {
     let mut rgb_image = load_image(&args.input)?;
     let pixels = rgb_image.pixels_mut();
     let mut record = HashMap::new();

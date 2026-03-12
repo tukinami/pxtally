@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File, io::Write, path::PathBuf};
 
 use image::RgbImage;
 use serde::Serialize;
@@ -6,7 +6,7 @@ use serde::Serialize;
 use crate::{
     config::OutputArgs,
     counter::{Counter, Filter},
-    process::ProcessError,
+    error::PxTallyError,
 };
 
 #[derive(Debug, Serialize)]
@@ -183,27 +183,68 @@ impl Stats {
 pub(crate) fn output<C, F, T>(
     color_space_name: &str,
     component_name: &str,
-    vec: &[C],
+    counters: &[C],
     rgb_image: &RgbImage,
     filter: &F,
     output_args: &OutputArgs,
-    filtered_total: (f64, u128),
-) -> Result<(), ProcessError>
+    filtered_totals: (f64, u128),
+) -> Result<(), PxTallyError>
 where
     C: Counter,
     F: Filter<T>,
 {
+    if let Some(path) = output_args.json.as_ref() {
+        output_json(
+            path,
+            color_space_name,
+            component_name,
+            counters,
+            rgb_image,
+            filter,
+            filtered_totals,
+        )?;
+    }
+
     if !output_args.no_io {
         output_io(
             color_space_name,
             component_name,
-            vec,
+            counters,
             rgb_image.width(),
             rgb_image.height(),
             filter,
-            filtered_total,
+            filtered_totals,
         );
     }
+
+    Ok(())
+}
+
+fn output_json<C, F, T>(
+    path: &PathBuf,
+    color_space_name: &str,
+    component_name: &str,
+    counters: &[C],
+    rgb_image: &RgbImage,
+    filter: &F,
+    filtered_totals: (f64, u128),
+) -> Result<(), PxTallyError>
+where
+    C: Counter,
+    F: Filter<T>,
+{
+    let json_struct = OutputJson::new(
+        color_space_name,
+        component_name,
+        counters,
+        rgb_image,
+        filter,
+        filtered_totals,
+    );
+    let json_string = serde_json::to_string(&json_struct)?;
+
+    let mut file = File::create(path)?;
+    file.write_all(json_string.as_bytes())?;
 
     Ok(())
 }
