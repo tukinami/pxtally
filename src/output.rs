@@ -9,6 +9,8 @@ use crate::{
     error::PxTallyError,
 };
 
+const OUTPUT_JSON_SCHEMA_VERSION: u32 = 1;
+
 #[derive(Debug, Serialize)]
 struct OutputJson {
     tool_name: String,
@@ -69,7 +71,7 @@ impl OutputJson {
     {
         let tool_name = env!("CARGO_BIN_NAME").to_string();
         let tool_version = env!("CARGO_PKG_VERSION").to_string();
-        let schema_version = 1;
+        let schema_version = OUTPUT_JSON_SCHEMA_VERSION;
 
         let width = rgb_image.width();
         let height = rgb_image.height();
