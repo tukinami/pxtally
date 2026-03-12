@@ -236,11 +236,11 @@ where
 
 fn rotate_value(raw_value: f32) -> f32 {
     if (0.0..360.0).contains(&raw_value) {
-        raw_value.abs()
+        raw_value
     } else if raw_value < 0.0 {
         360.0 + raw_value
     } else {
-        raw_value.abs() - 360.0
+        raw_value - 360.0
     }
 }
 
