@@ -1,12 +1,45 @@
 # pxTally
 
-[GitHub repository](https://github.com/tukinami/pxtally)
-
-## これは何？
+![Crates.io Version](https://img.shields.io/crates/v/pxtally)
 
 画像内のピクセルを色空間ごとに分類し、集計するCLIツールです。Rust製。
 
-集計結果は以下のようになります。(`HSL`の`hue`について集計)
+イラストや写真の色傾向を把握したいときに活用できます。
+
+日本語 / [English](https://github.com/tukinami/pxtally/blob/main/README.en.md)
+
+[GitHub repository](https://github.com/tukinami/pxtally)
+
+## 目次
+
+- [できること](#できること)
+- [インストール](#インストール)
+- [使い方](#使い方)
+  - [集計 (hsl / oklch)](#集計-hsl--oklch)
+  - [画像加工 (img-oklch)](#画像加工-img-oklch)
+  - [helpオプション](#helpオプション)
+- [使用ライブラリ](#使用ライブラリ)
+- [ライセンス](#ライセンス)
+- [作成者](#作成者)
+
+## できること
+
+- 画像内のピクセルを色空間ごとに分類し、集計結果を出力する
+- 集計結果を整形テキストまたはJSON形式で出力する
+- `OKLCH`色空間で画像の色を変更し、新しい画像として出力する
+
+現バージョンで対応している色空間:
+
+- `HSL`: (hue, saturation, lightness)
+- `OKLCH`: (lightness, chroma, hue)
+
+対応している画像フォーマット:
+
+AVIF, BMP, DDS, EXR, FF, GIF, HDR, ICO, JPEG, PNG, PNM, QOI, TGA, TIFF, WebP
+
+### 出力例
+
+`HSL`の`hue`について集計した結果:
 
 ``` PowerShell
 PS path\to\pxtally> pxtally.exe hsl hue --path C:\Users\Public\Pictures\something.png
@@ -27,147 +60,103 @@ hsl hue
  avr : 177.7155
 ```
 
-集計結果は上記のような整形された標準出力の他、JSON形式でも出力できます。
-JSONのスキーマは[`schemas`ディレクトリ](https://github.com/tukinami/pxtally/tree/main/schemas)にあります。
+## インストール
 
-現在対応している色空間は以下。
+### リリースページから
 
-- `HSL`: (hue, saturation, lightness)
-- `OKLCH`: (lightness, chroma, hue)
+[Releasesの最新版](https://github.com/tukinami/pxtally/releases/latest)から、使用環境にあった実行ファイルをダウンロード・展開してください。
 
-余力があれば追加します。
+注意: 現在、`x86_64-pc-windows-msvc` と `i686-pc-windows-msvc` 用のビルドのみ提供しています。
 
-また、追加の機能として、`OKLCH`に変換した後、用途によって色を変更した画像を出力する機能があります。
+展開したフォルダをそのまま使うか、「パスを通す」ことで任意の場所から呼び出せます。
+
+### cargo を使う場合
+
+[crates.io](https://crates.io/crates/pxtally) にも登録しています。
+
+`cargo` が使える環境であれば、以下のコマンドでインストールできます。
+
+```
+cargo install pxtally
+```
 
 ## 使い方
 
-ダウンロードは[Releasesの最新版](https://github.com/tukinami/pxtally/releases/latest)から使用環境にあった実行ファイルをダウンロード・展開してください。
+### 集計 (hsl / oklch)
 
-(※現在、`x86_64-pc-windows-msvc`と`i686-pc-windows-msvc`用のビルドしかありません)
-
-実行ファイルのある場所を、仮に`path/to/pxtally`とします。
-
-コマンドプロンプト、PowerShellなどのシェルで、`path/to/pxtally`に移動します。
-
-その後、Windowsの場合、`pxtally.exe --help`入力し、決定します。(他のOSの場合は実行ファイルの名前を適宜読み替えてください)
-
-使い方が出てくるので、それに従って使用してください。
-
-なお、「パスを通す」の意味が分かる方は、そちらの方法でも大丈夫です。
-
-## 基本的なコマンドとオプション
-
-### `img-oklch`以外
-
-`pxtally <colorspace> <component> --path <PATH>`のように使用します。
-
-例:
-
-+ `pxtally hsl saturation --path C:\Users\Public\Pictures\something.png`
-+ `pxtally oklch chroma --path C:\Users\Public\Pictures\something.png`
-
-整形されたものがデフォルトで標準出力されます。
-これを抑えたいときは、`--no-print`のオプションを付けてください。
-
-例: `pxtally hsl saturation --path C:\Users\Public\Pictures\something.png --no-print`
-
-JSON形式でも出力できます。標準出力に出力したいときは`--json`オプションを付けます。`--no-print`をつけていても出力されます。
-
-例: `pxtally hsl saturation --path C:\Users\Public\Pictures\something.png --json`
-
-JSON形式のファイルで出力したい場合は、`--json-output <PATH>`を入力してください。
-
-例: `pxtally hsl saturation --path C:\Users\Public\Pictures\something.png --json-output ./test.json`
-
-### `img-oklch`
-
-`pxtally img-oklch --input <INPUT_PATH> --output <OUTPUT_PATH>`のように使用します。
-
-例: `pxtally img-oklch --input C:\Users\Public\Pictures\something.png --output ./test.png`
-
-このままでは大して変わらない画像が出力されると思います。
-
-このコマンドでは、`lightness`、`chroma`、`hue`の値を一定に変更できます。
-例えば、`lightness`を`0.2`にするときは、以下のようになります。
-
-例: `pxtally img-oklch --input C:\Users\Public\Pictures\something.png --output ./test.png --lightness 0.2`
-
-## 色空間ごとのヘルプ出力
-
-それぞれの細かいオプションなどは、`pxtally <COMMAND> --help`や`pxtally <COMMAND> <SUBCOMMAND> --help`などを参照してください。
+``` PowerShell
+pxtally <COLOR_SPACE> <COMPONENT> --path <PATH>
+```
 
 例:
 
 ``` PowerShell
-PS path\to\pxtally> pxtally.exe --help
-CLI tool to tally pixels.
-
-Usage: pxtally.exe <COMMAND>
-
-Commands:
-  hsl        Analyze under HSL color space
-  oklch      Analyze under OKLCH color space
-  img-oklch  Output the image processed under OKLCH
-  help       Print this message or the help of the given subcommand(s)
-
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
+pxtally hsl saturation --path C:\Users\Public\Pictures\something.png
+pxtally oklch chroma   --path C:\Users\Public\Pictures\something.png
 ```
 
-### `hsl`
+#### 出力オプション
+
+| オプション | 説明 |
+|---|---|
+| (デフォルト) | 整形されたテキストを標準出力に表示 |
+| `--no-print` | 整形テキストの標準出力を抑制 |
+| `--json` | JSON形式で標準出力に表示 (`--no-print` をつけていても出力されます) |
+| `--json-output <PATH>` | JSON形式でファイルに出力 |
+| `--force` | 強制的にファイルを上書き出力する |
+
+JSONのスキーマは[`schemas`ディレクトリ](https://github.com/tukinami/pxtally/tree/main/schemas)にあります。
+
+例:
 
 ``` PowerShell
-PS path\to\pxtally> pxtally.exe hsl --help
-Analyze under HSL color space
+# 整形テキストを抑制してJSONのみ標準出力
+pxtally hsl saturation --path something.png --no-print --json
 
-Usage: pxtally.exe hsl <COMMAND>
-
-Commands:
-  hue, -H         About hue
-  saturation, -s  About saturation
-  lightness, -l   About lightness
-  help            Print this message or the help of the given subcommand(s)
-
-Options:
-  -h, --help  Print help
+# JSONファイルとして保存
+pxtally hsl saturation --path something.png --json-output ./result.json
 ```
 
-### `oklch`
+### 画像加工 (img-oklch)
+
+`OKLCH`色空間で画像の各ピクセルの`lightness`・`chroma`・`hue`を指定した値に変更し、新しい画像として出力します。
 
 ``` PowerShell
-PS path\to\pxtally> pxtally.exe oklch --help
-Analyze under OKLCH color space
-
-Usage: pxtally.exe oklch <COMMAND>
-
-Commands:
-  lightness, -l  About lightness
-  chroma, -c     About chroma
-  hue, -H        About hue
-  help           Print this message or the help of the given subcommand(s)
-
-Options:
-  -h, --help  Print help
+pxtally img-oklch --input <INPUT_PATH> --output <OUTPUT_PATH> [OPTIONS]
 ```
 
-### `img-oklch`
+例:
 
 ``` PowerShell
-PS path\to\pxtally> pxtally.exe img-oklch --help
-Output the image processed under OKLCH
-
-Usage: pxtally.exe img-oklch [OPTIONS] --input <INPUT> --output <OUTPUT>
-
-Options:
-  -i, --input <INPUT>          Path to input image
-  -o, --output <OUTPUT>        Path to output image
-  -l, --lightness <LIGHTNESS>  Override value for lightness
-  -c, --chroma <CHROMA>        Override value for chroma
-  -H, --hue <HUE>              Override value for hue
-  -h, --help                   Print help
+# lightness を 0.2 に固定して出力
+pxtally img-oklch --input something.png --output result.png --lightness 0.2
 ```
 
+注意: 何も指定しなければ元の画像とほぼ変わらない画像が出力されます。
+
+ファイルの上書き出力を強制する`--force`オプションもあります。
+
+例:
+
+``` PowerShell
+# result.png が存在しても確認せずに上書き出力する
+pxtally img-oklch --input something.png --output result.png --lightness 0.2 --force
+```
+
+### helpオプション
+
+各コマンドの詳細オプションは `--help` で確認できます。
+
+例:
+
+``` PowerShell
+pxtally --help
+pxtally hsl --help
+pxtally hsl hue --help
+pxtally oklch --help
+pxtally oklch chroma --help
+pxtally img-oklch --help
+```
 
 ## 使用ライブラリ
 
