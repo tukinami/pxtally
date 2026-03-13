@@ -19,6 +19,9 @@ pub(crate) enum Commands {
     #[command(subcommand)]
     /// Analyze under OKLCH color space
     Oklch(OklchCommands),
+    /// Analyze under CIELCH color space
+    #[command(subcommand)]
+    Cielch(CielchCommands),
     /// Output the image processed under OKLCH
     ImgOklch(ImgOklchArgs),
 }
@@ -38,6 +41,19 @@ pub(crate) enum HslCommands {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum OklchCommands {
+    #[command(short_flag = 'l')]
+    /// About lightness
+    Lightness(PercentageArgs),
+    #[command(short_flag = 'c')]
+    /// About chroma
+    Chroma(ChromaArgs),
+    #[command(short_flag = 'H')]
+    /// About hue
+    Hue(AngleArgs),
+}
+
+#[derive(Subcommand, Debug)]
+pub(crate) enum CielchCommands {
     #[command(short_flag = 'l')]
     /// About lightness
     Lightness(PercentageArgs),

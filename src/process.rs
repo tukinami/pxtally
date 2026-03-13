@@ -7,6 +7,7 @@ use crate::{
     error::PxTallyError,
 };
 
+pub(crate) mod cielch;
 pub(crate) mod hsl;
 mod img_oklch;
 pub(crate) mod oklch;
@@ -21,6 +22,7 @@ fn process_body(cli: &Cli) -> Result<(), PxTallyError> {
     match &cli.command {
         Commands::Hsl(command) => hsl::process_hsl(command),
         Commands::Oklch(command) => oklch::process_oklch(command),
+        Commands::Cielch(command) => cielch::process_lch(command),
         Commands::ImgOklch(args) => img_oklch::process_img_oklch(args),
     }
 }
