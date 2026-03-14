@@ -70,6 +70,8 @@ mod tests {
     use super::*;
 
     mod process_img_oklch {
+        use std::path::Path;
+
         use super::*;
 
         #[test]
@@ -77,8 +79,10 @@ mod tests {
             let base_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test_target");
             let base_file = base_dir.join("base.png");
 
+            let temp_dir = tempfile::tempdir().unwrap();
+
             let args = create_args(
-                &base_dir,
+                &temp_dir.path(),
                 &base_file,
                 "test_l050_c015.png",
                 None,
@@ -88,7 +92,7 @@ mod tests {
             assert!(process_img_oklch(&args).is_ok());
 
             let args = create_args(
-                &base_dir,
+                temp_dir.path(),
                 &base_file,
                 "test_l050_c015.png",
                 Some(0.5),
@@ -98,7 +102,7 @@ mod tests {
             assert!(process_img_oklch(&args).is_ok());
 
             let args = create_args(
-                &base_dir,
+                temp_dir.path(),
                 &base_file,
                 "test_l050_c010.png",
                 Some(0.5),
@@ -108,7 +112,7 @@ mod tests {
             assert!(process_img_oklch(&args).is_ok());
 
             let args = create_args(
-                &base_dir,
+                temp_dir.path(),
                 &base_file,
                 "test_l050_c005.png",
                 Some(0.5),
@@ -118,7 +122,7 @@ mod tests {
             assert!(process_img_oklch(&args).is_ok());
 
             let args = create_args(
-                &base_dir,
+                temp_dir.path(),
                 &base_file,
                 "test_l075_c010.png",
                 Some(0.75),
@@ -128,7 +132,7 @@ mod tests {
             assert!(process_img_oklch(&args).is_ok());
 
             let args = create_args(
-                &base_dir,
+                temp_dir.path(),
                 &base_file,
                 "test_l025_c010.png",
                 Some(0.25),
@@ -138,7 +142,7 @@ mod tests {
             assert!(process_img_oklch(&args).is_ok());
 
             let args = create_args(
-                &base_dir,
+                temp_dir.path(),
                 &base_file,
                 "test_l050_h300.png",
                 Some(0.5),
@@ -148,7 +152,7 @@ mod tests {
             assert!(process_img_oklch(&args).is_ok());
 
             let args = create_args(
-                &base_dir,
+                temp_dir.path(),
                 &base_file,
                 "test_l050_c012.png",
                 Some(0.5),
@@ -156,10 +160,16 @@ mod tests {
                 None,
             );
             assert!(process_img_oklch(&args).is_ok());
+
+            drop(args);
+            drop(base_file);
+            drop(base_dir);
+
+            temp_dir.close().unwrap();
         }
 
         fn create_args(
-            base_dir: &PathBuf,
+            base_dir: &Path,
             input: &PathBuf,
             output: &str,
             lightness: Option<f32>,
