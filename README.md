@@ -1,6 +1,6 @@
 # pxTally
 
-![Crates.io Version](https://img.shields.io/crates/v/pxtally)
+[![Crates.io Version](https://img.shields.io/crates/v/pxtally)](https://crates.io/crates/pxtally)
 
 画像内のピクセルを色空間ごとに分類し、集計するCLIツールです。Rust製。
 
@@ -15,7 +15,7 @@
 - [できること](#できること)
 - [インストール](#インストール)
 - [使い方](#使い方)
-  - [集計 (hsl / oklch)](#集計-hsl--oklch)
+  - [集計](#集計)
   - [画像加工 (img-oklch)](#画像加工-img-oklch)
   - [helpオプション](#helpオプション)
 - [使用ライブラリ](#使用ライブラリ)
@@ -32,6 +32,9 @@
 
 - `HSL`: (hue, saturation, lightness)
 - `OKLCH`: (lightness, chroma, hue)
+- `OKLAB`: (lightness, a (green/red), b (blue/yellow))
+- `CIELCH`: (lightness, chroma, hue)
+- `CIELAB`: (lightness, a (green/red), b (blue/yellow))
 
 対応している画像フォーマット:
 
@@ -82,7 +85,7 @@ cargo install pxtally
 
 ## 使い方
 
-### 集計 (hsl / oklch)
+### 集計
 
 ``` PowerShell
 pxtally <COLOR_SPACE> <COMPONENT> --path <PATH>
