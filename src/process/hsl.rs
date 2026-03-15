@@ -76,7 +76,7 @@ fn process_hue(rgb_image: &RgbImage, args: &AngleArgs) -> Result<(), PxTallyErro
 
     let filter = HslFilter::new(&None, &None);
 
-    let filtered_totals =
+    let extracted_totals =
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_hue);
 
     output(
@@ -86,7 +86,7 @@ fn process_hue(rgb_image: &RgbImage, args: &AngleArgs) -> Result<(), PxTallyErro
         rgb_image,
         &filter,
         &args.output,
-        filtered_totals,
+        extracted_totals,
     )?;
 
     Ok(())
@@ -102,7 +102,7 @@ fn process_saturation(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(),
 
     let filter = HslFilter::new(&None, &None);
 
-    let filtered_totals =
+    let extracted_totals =
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_saturation);
 
     output(
@@ -112,7 +112,7 @@ fn process_saturation(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(),
         rgb_image,
         &filter,
         &args.output,
-        filtered_totals,
+        extracted_totals,
     )?;
 
     Ok(())
@@ -128,7 +128,7 @@ fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), 
 
     let filter = HslFilter::new(&None, &None);
 
-    let filtered_totals =
+    let extracted_totals =
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_lightness);
 
     output(
@@ -138,7 +138,7 @@ fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), 
         rgb_image,
         &filter,
         &args.output,
-        filtered_totals,
+        extracted_totals,
     )?;
 
     Ok(())

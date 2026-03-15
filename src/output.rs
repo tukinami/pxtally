@@ -14,13 +14,14 @@ use crate::{
     error::PxTallyError,
 };
 
-const OUTPUT_JSON_SCHEMA_VERSION: u32 = 1;
+const OUTPUT_JSON_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Serialize)]
 struct OutputJson {
     tool_name: String,
     tool_version: String,
     schema_version: u32,
+    analyzed_at: u64,
     image: ImageData,
     analysis: AnalysisData,
 }
@@ -59,6 +60,10 @@ struct BinData {
 #[derive(Debug, Serialize)]
 struct Stats {
     average: f64,
+    median: f64,
+    standard_deviation: f64,
+    extracted_total_value: f64,
+    extracted_total_pixel: u128,
 }
 
 impl OutputJson {
@@ -68,8 +73,8 @@ impl OutputJson {
         counters: &[C],
         rgb_image: &RgbImage,
         filter: &F,
-        filtered_totals: (f64, u128),
-    ) -> OutputJson
+        extracted_totals: (f64, u128),
+    ) -> Result<OutputJson, PxTallyError>
     where
         C: Counter,
         F: Filter<T>,
@@ -77,6 +82,8 @@ impl OutputJson {
         let tool_name = env!("CARGO_BIN_NAME").to_string();
         let tool_version = env!("CARGO_PKG_VERSION").to_string();
         let schema_version = OUTPUT_JSON_SCHEMA_VERSION;
+        let system_time = std::time::SystemTime::now();
+        let analyzed_at = system_time.duration_since(std::time::UNIX_EPOCH)?.as_secs();
 
         let width = rgb_image.width();
         let height = rgb_image.height();
@@ -90,16 +97,17 @@ impl OutputJson {
             pixels,
             filter,
             counters,
-            filtered_totals,
+            extracted_totals,
         );
 
-        OutputJson {
+        Ok(OutputJson {
             tool_name,
             tool_version,
+            analyzed_at,
             schema_version,
             image,
             analysis,
-        }
+        })
     }
 }
 
@@ -120,7 +128,7 @@ impl AnalysisData {
         total_pixel: u128,
         filter: &F,
         counters: &[C],
-        filtered_tolals: (f64, u128),
+        extracted_tolals: (f64, u128),
     ) -> AnalysisData
     where
         C: Counter,
@@ -147,7 +155,7 @@ impl AnalysisData {
             .map(|c| BinData::new(c, total_pixel))
             .collect();
 
-        let stats = Stats::new(filtered_tolals);
+        let stats = Stats::new(extracted_tolals, &bins);
 
         AnalysisData {
             color_space,
@@ -180,10 +188,51 @@ impl BinData {
 }
 
 impl Stats {
-    pub fn new((filtered_total_value, filtered_total_pixel): (f64, u128)) -> Stats {
-        let average = filtered_total_value / filtered_total_pixel as f64;
+    pub fn new(
+        (extracted_total_value, extracted_total_pixel): (f64, u128),
+        bins: &[BinData],
+    ) -> Stats {
+        let average = extracted_total_value / extracted_total_pixel as f64;
+        let median = Stats::calc_median(bins, extracted_total_pixel);
+        let standard_deviation =
+            Stats::calc_standard_deviation(bins, extracted_total_pixel, average);
 
-        Stats { average }
+        Stats {
+            average,
+            median,
+            standard_deviation,
+            extracted_total_value,
+            extracted_total_pixel,
+        }
+    }
+
+    fn calc_median(bins: &[BinData], extracted_total_pixel: u128) -> f64 {
+        let half = extracted_total_pixel as f64 / 2.0;
+        bins.iter()
+            .scan(0u128, |cumulative, bin| {
+                *cumulative += bin.pixel_count;
+                Some((*cumulative, bin))
+            })
+            .find(|(cumulative, _)| *cumulative as f64 >= half)
+            .map(|(cumulative, bin)| {
+                let prev = cumulative - bin.pixel_count;
+                let t = (half - prev as f64) / bin.pixel_count as f64;
+                bin.range_start as f64 + t * (bin.range_end as f64 - bin.range_start as f64)
+            })
+            .unwrap_or(0.0)
+    }
+
+    fn calc_standard_deviation(bins: &[BinData], extracted_total_pixel: u128, average: f64) -> f64 {
+        let variance = bins
+            .iter()
+            .map(|b| {
+                let center = (b.range_start + b.range_end) as f64 / 2.0;
+                let diff = center - average;
+                diff.powf(2.0) * b.pixel_count as f64
+            })
+            .sum::<f64>()
+            / extracted_total_pixel as f64;
+        variance.sqrt()
     }
 }
 
@@ -220,7 +269,7 @@ pub(crate) fn output<C, F, T>(
     rgb_image: &RgbImage,
     filter: &F,
     output_args: &OutputArgs,
-    filtered_totals: (f64, u128),
+    extracted_totals: (f64, u128),
 ) -> Result<(), PxTallyError>
 where
     C: Counter,
@@ -233,7 +282,7 @@ where
         counters,
         rgb_image,
         filter,
-        filtered_totals,
+        extracted_totals,
     )?;
 
     if !output_args.no_print {
@@ -244,7 +293,7 @@ where
             rgb_image.width(),
             rgb_image.height(),
             filter,
-            filtered_totals,
+            extracted_totals,
         );
     }
 
@@ -258,7 +307,7 @@ fn output_json<C, F, T>(
     counters: &[C],
     rgb_image: &RgbImage,
     filter: &F,
-    filtered_totals: (f64, u128),
+    extracted_totals: (f64, u128),
 ) -> Result<(), PxTallyError>
 where
     C: Counter,
@@ -271,8 +320,8 @@ where
             counters,
             rgb_image,
             filter,
-            filtered_totals,
-        );
+            extracted_totals,
+        )?;
         let json_string = serde_json::to_string(&json_struct)?;
 
         if output_args.json {
@@ -305,7 +354,7 @@ fn output_stdout<C, F, T>(
     width: u32,
     height: u32,
     filter: &F,
-    (filtered_total_value, filtered_total_pixel): (f64, u128),
+    (extracted_total_value, extracted_total_pixel): (f64, u128),
 ) where
     C: Counter,
     F: Filter<T>,
@@ -333,9 +382,9 @@ fn output_stdout<C, F, T>(
             counter.count()
         )
     }
-    let filtered_avr = filtered_total_value / filtered_total_pixel as f64;
+    let extracted_avr = extracted_total_value / extracted_total_pixel as f64;
     println!();
-    println!(" avr : {0:>8.4}", filtered_avr);
+    println!(" avr : {0:>8.4}", extracted_avr);
 }
 
 #[cfg(test)]
@@ -413,7 +462,7 @@ mod tests {
                 count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
 
             let output_json =
-                OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals);
+                OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals).unwrap();
 
             serde_json::to_string(&output_json)
         }
@@ -432,9 +481,174 @@ mod tests {
                 count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
 
             let output_json =
-                OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals);
+                OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals).unwrap();
 
             serde_json::to_string(&output_json)
+        }
+    }
+
+    mod stats {
+        use super::*;
+
+        fn case_bins_and_total_pixel(range: u128) -> (Vec<BinData>, u128) {
+            let mut case = Vec::new();
+            let total_pixel = (0..range).step_by(2).fold(0, |acc, v| (v * 10) + acc);
+
+            for i in (0..range).step_by(2) {
+                let range_start = i as f32;
+                let range_end = range_start + 2.0;
+                let pixel_count = i * 10;
+                let ratio = pixel_count as f64 / total_pixel as f64;
+
+                let bin = BinData {
+                    range_start,
+                    range_end,
+                    ratio,
+                    pixel_count,
+                };
+                case.push(bin);
+            }
+
+            (case, total_pixel)
+        }
+
+        mod median {
+            use super::*;
+            pub fn calc_median_temp(bins: &[BinData], _total_pixel: u128) -> f64 {
+                let mut values: Vec<f32> = bins
+                    .iter()
+                    .map(|v| {
+                        let mut vec = Vec::new();
+                        let value = (v.range_start + v.range_end) / 2.0;
+                        for _i in 0..v.pixel_count {
+                            vec.push(value);
+                        }
+                        vec
+                    })
+                    .flatten()
+                    .collect();
+                values.sort_by(|a, b| a.total_cmp(b));
+
+                let half_index = values.len() / 2;
+
+                if values.len() % 2 == 0 {
+                    let first = values[half_index];
+                    let second = values[half_index + 1];
+
+                    ((first + second) / 2.0) as f64
+                } else {
+                    values[half_index + 1] as f64
+                }
+            }
+
+            #[test]
+            fn checking_value() {
+                let case = [10, 20, 30, 40, 50];
+                let results_01: Vec<f64> = case
+                    .iter()
+                    .map(|v| {
+                        let (bins, total_pixel) = case_bins_and_total_pixel(*v);
+                        Stats::calc_median(&bins, total_pixel)
+                    })
+                    .collect();
+                let results_02: Vec<f64> = case
+                    .iter()
+                    .map(|v| {
+                        let (bins, total_pixel) = case_bins_and_total_pixel(*v);
+                        calc_median_temp(&bins, total_pixel)
+                    })
+                    .collect();
+                println!("results_01: {:?}", results_01);
+                println!("results_02: {:?}", results_02);
+
+                let results_01_avr =
+                    results_01.iter().fold(0.0, |acc, v| acc + v) / case.len() as f64;
+                let results_02_avr =
+                    results_02.iter().fold(0.0, |acc, v| acc + v) / case.len() as f64;
+                let diff = results_01_avr - results_02_avr;
+
+                assert!((-1.0..1.0).contains(&diff));
+            }
+        }
+
+        mod standard_deviation {
+            use super::*;
+
+            fn case_bins_and_total_pixel_std_div_0(range: u128) -> (Vec<BinData>, u128) {
+                let mut case = Vec::new();
+                let total_pixel = (0..range).step_by(2).fold(0, |acc, v| (v * 10) + acc);
+                let total_value = (0..range).step_by(2).fold(0, |acc, v| v + 1 + acc);
+                let average = (total_value as f64 / total_pixel as f64) as f32;
+
+                for i in (0..range).step_by(2) {
+                    let range_start = i as f32;
+                    let range_end = range_start + 2.0;
+                    let pixel_count = if (range_start..range_end).contains(&average) {
+                        total_pixel
+                    } else {
+                        0
+                    };
+                    let ratio = pixel_count as f64 / total_pixel as f64;
+
+                    let bin = BinData {
+                        range_start,
+                        range_end,
+                        ratio,
+                        pixel_count,
+                    };
+                    case.push(bin);
+                }
+
+                (case, total_pixel)
+            }
+
+            #[test]
+            fn checking_value_std_div_0() {
+                let case = [10, 20, 30, 40, 50];
+                let results_01: Vec<f64> = case
+                    .iter()
+                    .map(|v| {
+                        let (bins, total_pixel) = case_bins_and_total_pixel_std_div_0(*v);
+                        let total_values = bins
+                            .iter()
+                            .fold(0.0, |acc, v| (v.range_start - v.range_end) + acc)
+                            as f64;
+                        let average = total_values / total_pixel as f64;
+                        Stats::calc_standard_deviation(&bins, total_pixel, average)
+                    })
+                    .collect();
+
+                println!("results_01: {:?}", results_01);
+
+                let results_01_avr =
+                    results_01.iter().fold(0.0, |acc, v| acc + v) / case.len() as f64;
+
+                assert!((-2.0..2.0).contains(&results_01_avr));
+            }
+
+            #[test]
+            fn checking_value_std_div_normal() {
+                let case = [10, 20, 30, 40, 50];
+                let results_01: Vec<f64> = case
+                    .iter()
+                    .map(|v| {
+                        let (bins, total_pixel) = case_bins_and_total_pixel(*v);
+                        let total_values = bins
+                            .iter()
+                            .fold(0.0, |acc, v| (v.range_start - v.range_end) + acc)
+                            as f64;
+                        let average = total_values / total_pixel as f64;
+                        Stats::calc_standard_deviation(&bins, total_pixel, average)
+                    })
+                    .collect();
+
+                println!("results_01: {:?}", results_01);
+
+                let results_01_avr =
+                    results_01.iter().fold(0.0, |acc, v| acc + v) / case.len() as f64;
+
+                assert!(!(-2.0..2.0).contains(&results_01_avr));
+            }
         }
     }
 }

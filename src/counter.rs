@@ -227,6 +227,8 @@ fn rotate_value(raw_value: f32) -> f32 {
         raw_value
     } else if raw_value < 0.0 {
         360.0 + raw_value
+    } else if raw_value == 360.0_f32.next_up() {
+        raw_value
     } else {
         raw_value - 360.0
     }
@@ -278,6 +280,10 @@ mod tests {
 
                 let result = AngleCounter::new(50.0, 90.0_f32.next_up());
                 assert!(result.contains(&90.0));
+
+                let result = AngleCounter::new(0.0, 360.0_f32.next_up());
+                assert!(result.contains(&0.0));
+                assert!(result.contains(&360.0));
             }
         }
 
@@ -366,10 +372,10 @@ mod tests {
             let mut counters = create_counters(10, 0.0, 255.0, PercentageCounter::new);
             let filter = TestFilter::new(None);
 
-            let (filtered_total_value, filtered_total_pixel) =
+            let (extracted_total_value, extracted_total_pixel) =
                 count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
-            let filtered_avarage = filtered_total_value / filtered_total_pixel as f64;
-            assert_eq!(filtered_avarage, 15.0);
+            let extracted_avarage = extracted_total_value / extracted_total_pixel as f64;
+            assert_eq!(extracted_avarage, 15.0);
 
             let value_0_count = counters
                 .iter()
@@ -390,10 +396,10 @@ mod tests {
             assert!(r_range.contains(&20.0));
             let filter = TestFilter::new(Some(r_range));
 
-            let (filtered_total_value, filtered_total_pixel) =
+            let (extracted_total_value, extracted_total_pixel) =
                 count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
-            let filtered_avarage = filtered_total_value / filtered_total_pixel as f64;
-            assert_eq!(filtered_avarage, 15.0);
+            let extracted_avarage = extracted_total_value / extracted_total_pixel as f64;
+            assert_eq!(extracted_avarage, 15.0);
 
             let value_0_count = counters
                 .iter()
@@ -452,6 +458,7 @@ mod tests {
             assert_eq!(rotate_value(359.9), 359.9);
             assert_eq!(rotate_value(-10.0), 350.0);
             assert_eq!(rotate_value(380.0), 20.0);
+            assert_eq!(rotate_value(360.0_f32.next_up()), 360.0_f32.next_up());
         }
     }
 }
