@@ -60,6 +60,7 @@ struct BinData {
 #[derive(Debug, Serialize)]
 struct Stats {
     average: f64,
+    median: f64,
 }
 
 impl OutputJson {
@@ -151,7 +152,7 @@ impl AnalysisData {
             .map(|c| BinData::new(c, total_pixel))
             .collect();
 
-        let stats = Stats::new(filtered_tolals);
+        let stats = Stats::new(filtered_tolals, &bins);
 
         AnalysisData {
             color_space,
@@ -184,10 +185,30 @@ impl BinData {
 }
 
 impl Stats {
-    pub fn new((filtered_total_value, filtered_total_pixel): (f64, u128)) -> Stats {
+    pub fn new(
+        (filtered_total_value, filtered_total_pixel): (f64, u128),
+        bins: &[BinData],
+    ) -> Stats {
         let average = filtered_total_value / filtered_total_pixel as f64;
+        let median = Stats::median(bins, filtered_total_pixel);
 
-        Stats { average }
+        Stats { average, median }
+    }
+
+    pub fn median(bins: &[BinData], filtered_total_pixel: u128) -> f64 {
+        let half = filtered_total_pixel as f64 / 2.0;
+        bins.iter()
+            .scan(0u128, |cumulative, bin| {
+                *cumulative += bin.pixel_count;
+                Some((*cumulative, bin))
+            })
+            .find(|(cumulative, _)| *cumulative as f64 >= half)
+            .map(|(cumulative, bin)| {
+                let prev = cumulative - bin.pixel_count;
+                let t = (half - prev as f64) / bin.pixel_count as f64;
+                bin.range_start as f64 + t * (bin.range_end as f64 - bin.range_start as f64)
+            })
+            .unwrap_or(0.0)
     }
 }
 
@@ -439,6 +460,92 @@ mod tests {
                 OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals).unwrap();
 
             serde_json::to_string(&output_json)
+        }
+    }
+
+    mod stats {
+        use super::*;
+
+        mod median {
+            use super::*;
+
+            fn case_bins_and_total_pixel(range: u128) -> (Vec<BinData>, u128) {
+                let mut case = Vec::new();
+                let total = (0..range).step_by(2).fold(0, |acc, v| (v * 10) + acc);
+
+                for i in (0..range).step_by(2) {
+                    let range_start = i as f32;
+                    let range_end = range_start + 2.0;
+                    let pixel_count = i * 10;
+                    let ratio = pixel_count as f64 / total as f64;
+
+                    let bin = BinData {
+                        range_start,
+                        range_end,
+                        ratio,
+                        pixel_count,
+                    };
+                    case.push(bin);
+                }
+
+                (case, total)
+            }
+
+            pub fn median_temp(bins: &[BinData], _total_pixel: u128) -> f64 {
+                let mut values: Vec<f32> = bins
+                    .iter()
+                    .map(|v| {
+                        let mut vec = Vec::new();
+                        let value = (v.range_start + v.range_end) / 2.0;
+                        for _i in 0..v.pixel_count {
+                            vec.push(value);
+                        }
+                        vec
+                    })
+                    .flatten()
+                    .collect();
+                values.sort_by(|a, b| a.total_cmp(b));
+
+                let half_index = values.len() / 2;
+
+                if values.len() % 2 == 0 {
+                    let first = values[half_index];
+                    let second = values[half_index + 1];
+
+                    ((first + second) / 2.0) as f64
+                } else {
+                    values[half_index + 1] as f64
+                }
+            }
+
+            #[test]
+            fn checking_value() {
+                let case = [10, 20, 30, 40, 50];
+                let results_01: Vec<f64> = case
+                    .iter()
+                    .map(|v| {
+                        let (bins, total_pixel) = case_bins_and_total_pixel(*v);
+                        Stats::median(&bins, total_pixel)
+                    })
+                    .collect();
+                let results_02: Vec<f64> = case
+                    .iter()
+                    .map(|v| {
+                        let (bins, total_pixel) = case_bins_and_total_pixel(*v);
+                        median_temp(&bins, total_pixel)
+                    })
+                    .collect();
+                println!("results_01: {:?}", results_01);
+                println!("results_02: {:?}", results_02);
+
+                let results_01_avr =
+                    results_01.iter().fold(0.0, |acc, v| acc + v) / case.len() as f64;
+                let results_02_avr =
+                    results_02.iter().fold(0.0, |acc, v| acc + v) / case.len() as f64;
+                let diff = results_01_avr - results_02_avr;
+
+                assert!((-1.0..1.0).contains(&diff));
+            }
         }
     }
 }
