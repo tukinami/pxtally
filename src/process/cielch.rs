@@ -15,7 +15,7 @@ pub(crate) mod constants {
     pub(crate) const LIGHTNESS_MIN: f32 = 0.0;
     pub(crate) const LIGHTNESS_MAX: f32 = 100.0;
     pub(crate) const CHROMA_MIN: f32 = 0.0;
-    pub(crate) const CHROMA_MAX: f32 = 0.5;
+    pub(crate) const CHROMA_MAX: f32 = 160.0;
     #[allow(unused)]
     pub(crate) const HUE_MIN: f32 = 0.0;
     pub(crate) const HUE_MAX: f32 = 360.0;
