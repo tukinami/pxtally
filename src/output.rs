@@ -375,7 +375,7 @@ fn output_stdout<C, F, T>(
         let ratio = counter.count() as f32 / total_pixel * 100.0;
 
         println!(
-            "{0:>6.2} -> {1:>6.2} : {2:>6.2}% ({3:>10} px)",
+            "{0:>7.2} -> {1:>7.2} : {2:>6.2}% ({3:>10} px)",
             counter.start(),
             counter.end(),
             ratio,
@@ -384,7 +384,7 @@ fn output_stdout<C, F, T>(
     }
     let extracted_avr = extracted_total_value / extracted_total_pixel as f64;
     println!();
-    println!(" avr : {0:>8.4}", extracted_avr);
+    println!(" avr : {0:>9.4}", extracted_avr);
 }
 
 #[cfg(test)]

@@ -19,6 +19,15 @@ pub(crate) enum Commands {
     #[command(subcommand)]
     /// Analyze under OKLCH color space
     Oklch(OklchCommands),
+    /// Analyze under OKLAB color space
+    #[command(subcommand)]
+    Oklab(OklabCommands),
+    /// Analyze under CIELCH color space
+    #[command(subcommand)]
+    Cielch(CielchCommands),
+    /// Analyze under CIELAB color space
+    #[command(subcommand)]
+    Cielab(CielabCommands),
     /// Output the image processed under OKLCH
     ImgOklch(ImgOklchArgs),
 }
@@ -47,6 +56,45 @@ pub(crate) enum OklchCommands {
     #[command(short_flag = 'H')]
     /// About hue
     Hue(AngleArgs),
+}
+
+#[derive(Subcommand, Debug)]
+pub(crate) enum OklabCommands {
+    #[command(short_flag = 'l')]
+    /// About lightness
+    Lightness(PercentageArgs),
+    #[command(short_flag = 'a')]
+    /// About a (green/red)
+    A(PercentageArgs),
+    #[command(short_flag = 'b')]
+    /// About b (blue/yellow)
+    B(PercentageArgs),
+}
+
+#[derive(Subcommand, Debug)]
+pub(crate) enum CielchCommands {
+    #[command(short_flag = 'l')]
+    /// About lightness
+    Lightness(PercentageArgs),
+    #[command(short_flag = 'c')]
+    /// About chroma
+    Chroma(ChromaArgs),
+    #[command(short_flag = 'H')]
+    /// About hue
+    Hue(AngleArgs),
+}
+
+#[derive(Subcommand, Debug)]
+pub(crate) enum CielabCommands {
+    #[command(short_flag = 'l')]
+    /// About lightness
+    Lightness(PercentageArgs),
+    #[command(short_flag = 'a')]
+    /// About a (green/red)
+    A(PercentageArgs),
+    #[command(short_flag = 'b')]
+    /// About b (blue/yellow)
+    B(PercentageArgs),
 }
 
 #[derive(Args, Debug)]

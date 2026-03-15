@@ -1,6 +1,6 @@
 # pxTally
 
-![Crates.io Version](https://img.shields.io/crates/v/pxtally)
+[![Crates.io Version](https://img.shields.io/crates/v/pxtally)](https://crates.io/crates/pxtally)
 
 A CLI tool that classifies and tallies pixels in an image by color space. Written in Rust.
 
@@ -15,7 +15,7 @@ It can be useful for analyzing the color tendencies of illustrations or photogra
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Tally (hsl / oklch)](#tally-hsl--oklch)
+  - [Tally](#tally)
   - [Image Processing (img-oklch)](#image-processing-img-oklch)
   - [Help Option](#help-option)
 - [Libraries](#libraries)
@@ -32,6 +32,9 @@ Color spaces supported in the current version:
 
 - `HSL`: (hue, saturation, lightness)
 - `OKLCH`: (lightness, chroma, hue)
+- `OKLAB`: (lightness, a (green/red), b (blue/yellow))
+- `CIELCH`: (lightness, chroma, hue)
+- `CIELAB`: (lightness, a (green/red), b (blue/yellow))
 
 Supported image formats:
 
@@ -82,7 +85,7 @@ cargo install pxtally
 
 ## Usage
 
-### Tally (hsl / oklch)
+### Tally
 
 ``` PowerShell
 pxtally <COLOR_SPACE> <COMPONENT> --path <PATH>

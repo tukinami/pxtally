@@ -59,12 +59,12 @@
         "color_space": {
           "description": "Color space used for analysis",
           "type": "string",
-          "enum": ["hsl", "oklch"]
+          "enum": ["hsl", "oklch", "oklab", "cielch", "cielab"]
         },
         "component": {
           "description": "Component of the color space used for analysis",
           "type": "string",
-          "examples": ["hue", "saturation", "lightness", "chroma"]
+          "examples": ["hue", "saturation", "lightness", "chroma", "a", "b"]
         },
         "interval_type": {
           "description": "Interval type of bins. All bins use half-open intervals [start, end), where range_end of the last bin is nextUp(max_value) in IEEE-754.",
