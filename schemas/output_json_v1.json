@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/tukinami/pxtally/schemas/ouput_json_v1.json",
+  "$id": "https://github.com/tukinami/pxtally/schemas/output_json_v1.json",
   "title": "pxtally output",
   "description": "Schema for pxtally JSON output (schema_version: 1)",
   "type": "object",
