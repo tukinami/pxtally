@@ -14,13 +14,14 @@ use crate::{
     error::PxTallyError,
 };
 
-const OUTPUT_JSON_SCHEMA_VERSION: u32 = 1;
+const OUTPUT_JSON_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Serialize)]
 struct OutputJson {
     tool_name: String,
     tool_version: String,
     schema_version: u32,
+    analyzed_at: u64,
     image: ImageData,
     analysis: AnalysisData,
 }
@@ -69,7 +70,7 @@ impl OutputJson {
         rgb_image: &RgbImage,
         filter: &F,
         filtered_totals: (f64, u128),
-    ) -> OutputJson
+    ) -> Result<OutputJson, PxTallyError>
     where
         C: Counter,
         F: Filter<T>,
@@ -77,6 +78,8 @@ impl OutputJson {
         let tool_name = env!("CARGO_BIN_NAME").to_string();
         let tool_version = env!("CARGO_PKG_VERSION").to_string();
         let schema_version = OUTPUT_JSON_SCHEMA_VERSION;
+        let system_time = std::time::SystemTime::now();
+        let analyzed_at = system_time.duration_since(std::time::UNIX_EPOCH)?.as_secs();
 
         let width = rgb_image.width();
         let height = rgb_image.height();
@@ -93,13 +96,14 @@ impl OutputJson {
             filtered_totals,
         );
 
-        OutputJson {
+        Ok(OutputJson {
             tool_name,
             tool_version,
+            analyzed_at,
             schema_version,
             image,
             analysis,
-        }
+        })
     }
 }
 
@@ -272,7 +276,7 @@ where
             rgb_image,
             filter,
             filtered_totals,
-        );
+        )?;
         let json_string = serde_json::to_string(&json_struct)?;
 
         if output_args.json {
@@ -413,7 +417,7 @@ mod tests {
                 count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
 
             let output_json =
-                OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals);
+                OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals).unwrap();
 
             serde_json::to_string(&output_json)
         }
@@ -432,7 +436,7 @@ mod tests {
                 count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
 
             let output_json =
-                OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals);
+                OutputJson::new("rgb", "b", &counters, &case, &filter, filtererd_totals).unwrap();
 
             serde_json::to_string(&output_json)
         }
