@@ -62,6 +62,8 @@ struct Stats {
     average: f64,
     median: f64,
     standard_deviation: f64,
+    extracted_total_value: f64,
+    extracted_total_pixel: u128,
 }
 
 impl OutputJson {
@@ -199,6 +201,8 @@ impl Stats {
             average,
             median,
             standard_deviation,
+            extracted_total_value,
+            extracted_total_pixel,
         }
     }
 
