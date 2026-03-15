@@ -9,6 +9,11 @@ description = "CLI tool to tally pixels."
 repository = "https://github.com/tukinami/pxtally"
 keywords = ["cli", "command", "color", "oklch" ]
 categories = ["command-line-utilities"]
+exclude = [
+    ".github/*",
+    "test_target/*",
+    "schemas/*",
+]
 
 [dependencies]
 image = "0.25.9"
