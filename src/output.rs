@@ -71,7 +71,7 @@ impl OutputJson {
         counters: &[C],
         rgb_image: &RgbImage,
         filter: &F,
-        filtered_totals: (f64, u128),
+        extracted_totals: (f64, u128),
     ) -> Result<OutputJson, PxTallyError>
     where
         C: Counter,
@@ -95,7 +95,7 @@ impl OutputJson {
             pixels,
             filter,
             counters,
-            filtered_totals,
+            extracted_totals,
         );
 
         Ok(OutputJson {
@@ -126,7 +126,7 @@ impl AnalysisData {
         total_pixel: u128,
         filter: &F,
         counters: &[C],
-        filtered_tolals: (f64, u128),
+        extracted_tolals: (f64, u128),
     ) -> AnalysisData
     where
         C: Counter,
@@ -153,7 +153,7 @@ impl AnalysisData {
             .map(|c| BinData::new(c, total_pixel))
             .collect();
 
-        let stats = Stats::new(filtered_tolals, &bins);
+        let stats = Stats::new(extracted_tolals, &bins);
 
         AnalysisData {
             color_space,
@@ -187,13 +187,13 @@ impl BinData {
 
 impl Stats {
     pub fn new(
-        (filtered_total_value, filtered_total_pixel): (f64, u128),
+        (extracted_total_value, extracted_total_pixel): (f64, u128),
         bins: &[BinData],
     ) -> Stats {
-        let average = filtered_total_value / filtered_total_pixel as f64;
-        let median = Stats::calc_median(bins, filtered_total_pixel);
+        let average = extracted_total_value / extracted_total_pixel as f64;
+        let median = Stats::calc_median(bins, extracted_total_pixel);
         let standard_deviation =
-            Stats::calc_standard_deviation(bins, filtered_total_pixel, average);
+            Stats::calc_standard_deviation(bins, extracted_total_pixel, average);
 
         Stats {
             average,
@@ -202,8 +202,8 @@ impl Stats {
         }
     }
 
-    fn calc_median(bins: &[BinData], filtered_total_pixel: u128) -> f64 {
-        let half = filtered_total_pixel as f64 / 2.0;
+    fn calc_median(bins: &[BinData], extracted_total_pixel: u128) -> f64 {
+        let half = extracted_total_pixel as f64 / 2.0;
         bins.iter()
             .scan(0u128, |cumulative, bin| {
                 *cumulative += bin.pixel_count;
@@ -218,7 +218,7 @@ impl Stats {
             .unwrap_or(0.0)
     }
 
-    fn calc_standard_deviation(bins: &[BinData], filtered_total_pixel: u128, average: f64) -> f64 {
+    fn calc_standard_deviation(bins: &[BinData], extracted_total_pixel: u128, average: f64) -> f64 {
         let variance = bins
             .iter()
             .map(|b| {
@@ -227,7 +227,7 @@ impl Stats {
                 diff.powf(2.0) * b.pixel_count as f64
             })
             .sum::<f64>()
-            / filtered_total_pixel as f64;
+            / extracted_total_pixel as f64;
         variance.sqrt()
     }
 }
@@ -265,7 +265,7 @@ pub(crate) fn output<C, F, T>(
     rgb_image: &RgbImage,
     filter: &F,
     output_args: &OutputArgs,
-    filtered_totals: (f64, u128),
+    extracted_totals: (f64, u128),
 ) -> Result<(), PxTallyError>
 where
     C: Counter,
@@ -278,7 +278,7 @@ where
         counters,
         rgb_image,
         filter,
-        filtered_totals,
+        extracted_totals,
     )?;
 
     if !output_args.no_print {
@@ -289,7 +289,7 @@ where
             rgb_image.width(),
             rgb_image.height(),
             filter,
-            filtered_totals,
+            extracted_totals,
         );
     }
 
@@ -303,7 +303,7 @@ fn output_json<C, F, T>(
     counters: &[C],
     rgb_image: &RgbImage,
     filter: &F,
-    filtered_totals: (f64, u128),
+    extracted_totals: (f64, u128),
 ) -> Result<(), PxTallyError>
 where
     C: Counter,
@@ -316,7 +316,7 @@ where
             counters,
             rgb_image,
             filter,
-            filtered_totals,
+            extracted_totals,
         )?;
         let json_string = serde_json::to_string(&json_struct)?;
 
@@ -350,7 +350,7 @@ fn output_stdout<C, F, T>(
     width: u32,
     height: u32,
     filter: &F,
-    (filtered_total_value, filtered_total_pixel): (f64, u128),
+    (extracted_total_value, extracted_total_pixel): (f64, u128),
 ) where
     C: Counter,
     F: Filter<T>,
@@ -378,9 +378,9 @@ fn output_stdout<C, F, T>(
             counter.count()
         )
     }
-    let filtered_avr = filtered_total_value / filtered_total_pixel as f64;
+    let extracted_avr = extracted_total_value / extracted_total_pixel as f64;
     println!();
-    println!(" avr : {0:>8.4}", filtered_avr);
+    println!(" avr : {0:>8.4}", extracted_avr);
 }
 
 #[cfg(test)]

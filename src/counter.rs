@@ -372,10 +372,10 @@ mod tests {
             let mut counters = create_counters(10, 0.0, 255.0, PercentageCounter::new);
             let filter = TestFilter::new(None);
 
-            let (filtered_total_value, filtered_total_pixel) =
+            let (extracted_total_value, extracted_total_pixel) =
                 count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
-            let filtered_avarage = filtered_total_value / filtered_total_pixel as f64;
-            assert_eq!(filtered_avarage, 15.0);
+            let extracted_avarage = extracted_total_value / extracted_total_pixel as f64;
+            assert_eq!(extracted_avarage, 15.0);
 
             let value_0_count = counters
                 .iter()
@@ -396,10 +396,10 @@ mod tests {
             assert!(r_range.contains(&20.0));
             let filter = TestFilter::new(Some(r_range));
 
-            let (filtered_total_value, filtered_total_pixel) =
+            let (extracted_total_value, extracted_total_pixel) =
                 count_by_func_with_filter(&case, &mut counters, &filter, test_get_value_b);
-            let filtered_avarage = filtered_total_value / filtered_total_pixel as f64;
-            assert_eq!(filtered_avarage, 15.0);
+            let extracted_avarage = extracted_total_value / extracted_total_pixel as f64;
+            assert_eq!(extracted_avarage, 15.0);
 
             let value_0_count = counters
                 .iter()
