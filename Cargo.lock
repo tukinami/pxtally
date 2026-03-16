@@ -791,7 +791,7 @@ dependencies = [
 
 [[package]]
 name = "pxtally"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "clap",
  "color",
