@@ -1,0 +1,10 @@
+{
+    "_version": 1,
+    "help.about": "Analyze and tally image pixels by color space.",
+    "help.command.hsl": "Analyze under HSL color space",
+    "help.command.oklch": "Analyze under OKLCH color space",
+    "help.command.oklab": "Analyze under OKLAB color space",
+    "help.command.cielch": "Analyze under CIELCH color space",
+    "help.command.cielab": "Analyze under CIELAB color space",
+    "help.command.imgoklch": "Output the image processed under OKLCH"
+}

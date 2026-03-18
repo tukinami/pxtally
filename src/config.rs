@@ -5,7 +5,7 @@ use clap::{Args, Parser, Subcommand};
 use crate::process;
 
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(version, about = t!("help.about"), long_about = None)]
 pub(crate) struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -13,22 +13,23 @@ pub(crate) struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum Commands {
-    #[command(subcommand)]
+    #[command(subcommand, about = t!("help.command.hsl"))]
     /// Analyze under HSL color space
     Hsl(HslCommands),
-    #[command(subcommand)]
+    #[command(subcommand,  about = t!("help.command.oklch"))]
     /// Analyze under OKLCH color space
     Oklch(OklchCommands),
     /// Analyze under OKLAB color space
-    #[command(subcommand)]
+    #[command(subcommand,  about = t!("help.command.oklab"))]
     Oklab(OklabCommands),
     /// Analyze under CIELCH color space
-    #[command(subcommand)]
+    #[command(subcommand,  about = t!("help.command.cielch"))]
     Cielch(CielchCommands),
     /// Analyze under CIELAB color space
-    #[command(subcommand)]
+    #[command(subcommand,  about = t!("help.command.cielab"))]
     Cielab(CielabCommands),
     /// Output the image processed under OKLCH
+    #[command( about = t!("help.command.imgoklch"))]
     ImgOklch(ImgOklchArgs),
 }
 

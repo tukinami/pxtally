@@ -1,0 +1,10 @@
+{
+    "_version": 1,
+    "help.about": "画像内のピクセルを色空間ごとに分類し、集計するツール。",
+    "help.command.hsl": "色空間 HSLで集計",
+    "help.command.oklch": "色空間 OKLCHで集計",
+    "help.command.oklab": "色空間 OKLABで集計",
+    "help.command.cielch": "色空間 CIELCHで集計",
+    "help.command.cielab": "色空間 CIELABで集計",
+    "help.command.imgoklch": "色空間 OKLCHで画像を処理・出力"
+}
