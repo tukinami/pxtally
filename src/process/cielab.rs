@@ -13,8 +13,10 @@ pub(crate) mod constants {
     pub(crate) const LIGHTNESS_MIN: f32 = 0.0;
     pub(crate) const LIGHTNESS_MAX: f32 = 100.0;
     pub(crate) const A_MIN: f32 = -160.0;
+    pub(crate) const A_MAX: f32 = 160.0;
     pub(crate) const A_WIDTH: f32 = 320.0;
     pub(crate) const B_MIN: f32 = -160.0;
+    pub(crate) const B_MAX: f32 = 160.0;
     pub(crate) const B_WIDTH: f32 = 320.0;
 }
 

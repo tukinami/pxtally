@@ -247,8 +247,11 @@ where
     let mut input = String::new();
 
     loop {
-        println!("{} already exists.", path.as_ref().display());
-        print!("Overwrite? [yes/no]: ");
+        println!(
+            "{}",
+            t!("output.confirm.q.1", path = path.as_ref().display())
+        );
+        print!("{} [yes/no]: ", t!("output.confirm.q.2"));
         stdout.flush()?;
 
         input.clear();
@@ -257,7 +260,7 @@ where
         match input.trim().to_lowercase().as_str() {
             "yes" | "y" => return f(),
             "no" | "n" => return Ok(()),
-            _ => println!("Please answer yes or no."),
+            _ => println!("{}", t!("output.confirm.a")),
         }
     }
 }
