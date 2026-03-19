@@ -2,7 +2,7 @@ use color::{Oklch, OpaqueColor};
 use image::{Rgb, RgbImage};
 
 use crate::{
-    config::{AngleArgs, ChromaArgs, OklchCommands, PercentageArgs},
+    config::{AngleArgs, OklchCommands, ValueWithHArgs},
     counter::{
         count_by_func_with_filter, create_counters, Angle, AngleCounter, Filter, PercentageCounter,
     },
@@ -69,7 +69,7 @@ pub(crate) fn process_oklch(command: &OklchCommands) -> Result<(), PxTallyError>
     Ok(())
 }
 
-fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), PxTallyError> {
+fn process_lightness(rgb_image: &RgbImage, args: &ValueWithHArgs) -> Result<(), PxTallyError> {
     let mut counters = create_counters(
         args.divisor,
         constants::LIGHTNESS_MIN,
@@ -77,7 +77,7 @@ fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), 
         PercentageCounter::new,
     );
 
-    let filter = OklchFilter::new(&None, &None);
+    let filter = OklchFilter::new(&args.start_hue, &args.end_hue);
 
     let extracted_totals =
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_lightness);
@@ -95,7 +95,7 @@ fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), 
     Ok(())
 }
 
-fn process_chroma(rgb_image: &RgbImage, args: &ChromaArgs) -> Result<(), PxTallyError> {
+fn process_chroma(rgb_image: &RgbImage, args: &ValueWithHArgs) -> Result<(), PxTallyError> {
     let mut counters = create_counters(
         args.divisor,
         constants::CHROMA_MIN,

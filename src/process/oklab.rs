@@ -2,7 +2,7 @@ use color::{Oklab, OpaqueColor};
 use image::{Rgb, RgbImage};
 
 use crate::{
-    config::{OklabCommands, PercentageArgs},
+    config::{OklabCommands, ValueArgs},
     counter::{count_by_func_with_filter, create_counters, Angle, Filter, PercentageCounter},
     error::PxTallyError,
     output::output,
@@ -61,7 +61,7 @@ pub(crate) fn process_oklab(command: &OklabCommands) -> Result<(), PxTallyError>
     Ok(())
 }
 
-fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), PxTallyError> {
+fn process_lightness(rgb_image: &RgbImage, args: &ValueArgs) -> Result<(), PxTallyError> {
     let mut counters = create_counters(
         args.divisor,
         constants::LIGHTNESS_MIN,
@@ -87,7 +87,7 @@ fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), 
     Ok(())
 }
 
-fn process_a(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), PxTallyError> {
+fn process_a(rgb_image: &RgbImage, args: &ValueArgs) -> Result<(), PxTallyError> {
     let mut counters = create_counters(
         args.divisor,
         constants::A_MIN,
@@ -112,7 +112,7 @@ fn process_a(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), PxTallyE
     Ok(())
 }
 
-fn process_b(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), PxTallyError> {
+fn process_b(rgb_image: &RgbImage, args: &ValueArgs) -> Result<(), PxTallyError> {
     let mut counters = create_counters(
         args.divisor,
         constants::B_MIN,

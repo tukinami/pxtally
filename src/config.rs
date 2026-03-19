@@ -40,20 +40,20 @@ pub(crate) enum HslCommands {
     Hue(AngleArgs),
     /// About saturation
     #[command(short_flag = 's', about = t!("help.subcommand.saturation", start = process::hsl::constants::SATURATION_MIN, end = process::hsl::constants::SATURATION_MAX))]
-    Saturation(PercentageArgs),
+    Saturation(ValueWithHArgs),
     /// About lightness
     #[command(short_flag = 'l', about = t!("help.subcommand.lightness", start = process::hsl::constants::LIGHTNESS_MIN, end = process::hsl::constants::LIGHTNESS_MAX))]
-    Lightness(PercentageArgs),
+    Lightness(ValueWithHArgs),
 }
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum OklchCommands {
     /// About lightness
     #[command(short_flag = 'l', about = t!("help.subcommand.lightness", start = process::oklch::constants::LIGHTNESS_MIN, end = process::oklch::constants::LIGHTNESS_MAX))]
-    Lightness(PercentageArgs),
+    Lightness(ValueWithHArgs),
     /// About chroma
     #[command(short_flag = 'c', about = t!("help.subcommand.chroma", start = process::oklch::constants::CHROMA_MIN, end = process::oklch::constants::CHROMA_MAX))]
-    Chroma(ChromaArgs),
+    Chroma(ValueWithHArgs),
     /// About hue
     #[command(short_flag = 'H', about = t!("help.subcommand.hue"))]
     Hue(AngleArgs),
@@ -63,23 +63,23 @@ pub(crate) enum OklchCommands {
 pub(crate) enum OklabCommands {
     /// About lightness
     #[command(short_flag = 'l', about = t!("help.subcommand.lightness", start = process::oklab::constants::LIGHTNESS_MIN, end = process::oklab::constants::LIGHTNESS_MAX))]
-    Lightness(PercentageArgs),
+    Lightness(ValueArgs),
     /// About a (green/red)
     #[command(short_flag = 'a', about = t!("help.subcommand.a", start = process::oklab::constants::A_MIN, end = process::oklab::constants::A_MAX))]
-    A(PercentageArgs),
+    A(ValueArgs),
     /// About b (blue/yellow)
     #[command(short_flag = 'b', about = t!("help.subcommand.b", start = process::oklab::constants::B_MIN, end = process::oklab::constants::B_MAX))]
-    B(PercentageArgs),
+    B(ValueArgs),
 }
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum CielchCommands {
     /// About lightness
     #[command(short_flag = 'l', about = t!("help.subcommand.lightness", start = process::cielch::constants::LIGHTNESS_MIN, end = process::cielch::constants::LIGHTNESS_MAX))]
-    Lightness(PercentageArgs),
+    Lightness(ValueWithHArgs),
     /// About chroma
     #[command(short_flag = 'c', about = t!("help.subcommand.chroma", start = process::cielch::constants::CHROMA_MIN, end = process::cielch::constants::CHROMA_MAX))]
-    Chroma(ChromaArgs),
+    Chroma(ValueWithHArgs),
     /// About hue
     #[command(short_flag = 'H', about = t!("help.subcommand.hue"))]
     Hue(AngleArgs),
@@ -89,13 +89,13 @@ pub(crate) enum CielchCommands {
 pub(crate) enum CielabCommands {
     /// About lightness
     #[command(short_flag = 'l', about = t!("help.subcommand.lightness", start = process::cielab::constants::LIGHTNESS_MIN, end = process::cielab::constants::LIGHTNESS_MAX))]
-    Lightness(PercentageArgs),
+    Lightness(ValueArgs),
     /// About a (green/red)
     #[command(short_flag = 'a', about = t!("help.subcommand.a", start = process::cielab::constants::A_MIN, end = process::cielab::constants::A_MAX))]
-    A(PercentageArgs),
+    A(ValueArgs),
     /// About b (blue/yellow)
     #[command(short_flag = 'b', about = t!("help.subcommand.b", start = process::cielab::constants::B_MIN, end = process::cielab::constants::B_MAX))]
-    B(PercentageArgs),
+    B(ValueArgs),
 }
 
 #[derive(Args, Debug)]
@@ -118,7 +118,7 @@ pub(crate) struct AngleArgs {
 }
 
 #[derive(Args, Debug)]
-pub(crate) struct PercentageArgs {
+pub(crate) struct ValueArgs {
     /// Path to image
     #[arg(short, long, help = t!("help.args.common.path"))]
     pub path: PathBuf,
@@ -133,7 +133,7 @@ pub(crate) struct PercentageArgs {
 }
 
 #[derive(Args, Debug)]
-pub(crate) struct ChromaArgs {
+pub(crate) struct ValueWithHArgs {
     /// Path to image
     #[arg(short, long, help = t!("help.args.common.path"))]
     pub path: PathBuf,
@@ -143,11 +143,11 @@ pub(crate) struct ChromaArgs {
     pub divisor: u16,
 
     /// Start of the hue range to extract
-    #[arg(short, long, value_parser = oklch_hue_in_range, help = t!("help.args.chroma.starthue", start = 0, end = 360))]
+    #[arg(short, long, value_parser = oklch_hue_in_range, help = t!("help.args.valuewithh.starthue", start = 0, end = 360))]
     pub start_hue: Option<u16>,
 
     /// End of the hue range to extract
-    #[arg(short, long, value_parser = oklch_hue_in_range, help = t!("help.args.chroma.endhue", start = 0, end = 360))]
+    #[arg(short, long, value_parser = oklch_hue_in_range, help = t!("help.args.valuewithh.endhue", start = 0, end = 360))]
     pub end_hue: Option<u16>,
 
     /// Output method

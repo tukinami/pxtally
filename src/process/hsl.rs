@@ -2,7 +2,7 @@ use color::{Hsl, OpaqueColor};
 use image::{Rgb, RgbImage};
 
 use crate::{
-    config::{AngleArgs, HslCommands, PercentageArgs},
+    config::{AngleArgs, HslCommands, ValueWithHArgs},
     counter::{
         count_by_func_with_filter, create_counters, Angle, AngleCounter, Filter, PercentageCounter,
     },
@@ -92,7 +92,7 @@ fn process_hue(rgb_image: &RgbImage, args: &AngleArgs) -> Result<(), PxTallyErro
     Ok(())
 }
 
-fn process_saturation(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), PxTallyError> {
+fn process_saturation(rgb_image: &RgbImage, args: &ValueWithHArgs) -> Result<(), PxTallyError> {
     let mut counters = create_counters(
         args.divisor,
         constants::SATURATION_MIN,
@@ -100,7 +100,7 @@ fn process_saturation(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(),
         PercentageCounter::new,
     );
 
-    let filter = HslFilter::new(&None, &None);
+    let filter = HslFilter::new(&args.start_hue, &args.end_hue);
 
     let extracted_totals =
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_saturation);
@@ -118,7 +118,7 @@ fn process_saturation(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(),
     Ok(())
 }
 
-fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), PxTallyError> {
+fn process_lightness(rgb_image: &RgbImage, args: &ValueWithHArgs) -> Result<(), PxTallyError> {
     let mut counters = create_counters(
         args.divisor,
         constants::LIGHTNESS_MIN,
@@ -126,7 +126,7 @@ fn process_lightness(rgb_image: &RgbImage, args: &PercentageArgs) -> Result<(), 
         PercentageCounter::new,
     );
 
-    let filter = HslFilter::new(&None, &None);
+    let filter = HslFilter::new(&args.start_hue, &args.end_hue);
 
     let extracted_totals =
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_lightness);
