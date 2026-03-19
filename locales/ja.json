@@ -21,7 +21,7 @@
     "help.args.output.noprint": "デフォルトのテキスト形式の出力を抑制する",
     "help.args.output.json": "結果をJSON形式で標準出力する",
     "help.args.output.jsonoutput": "指定されたファイルに結果をJSON形式で書き込む",
-    "help.args.common.force": "上書きが必要なとき、確認しない",
+    "help.args.common.force": "出力ファイルが存在する場合、確認せずに上書きする",
     "help.args.imgoklch.input": "入力画像へのパス",
     "help.args.imgoklch.output": "出力画像へのパス",
     "help.args.imgoklch.lightness": "処理後のlightness(明度)の値 (%{start} - %{end})",
