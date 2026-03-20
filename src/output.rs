@@ -517,7 +517,8 @@ mod tests {
 
         mod median {
             use super::*;
-            pub fn calc_median_temp(bins: &[BinData], _total_pixel: u128) -> f64 {
+
+            fn calc_median_temp(bins: &[BinData], _total_pixel: u128) -> f64 {
                 let mut values: Vec<f32> = bins
                     .iter()
                     .map(|v| {

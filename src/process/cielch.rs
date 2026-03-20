@@ -158,19 +158,82 @@ fn pixel_to_hue(lch: &OpaqueColor<Lch>) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use color::{Lch, OpaqueColor};
+    use super::*;
 
-    #[test]
-    fn checking_value() {
-        let target = OpaqueColor::from_rgb8(255, 255, 255);
-        let lch = target.convert::<Lch>();
-        println!("{}", lch.components[0]);
-        assert_eq!(lch.components[0], 100.0);
+    mod cielch_filter {
+        use super::*;
 
-        let target = OpaqueColor::from_rgb8(0, 0, 0);
-        let lch = target.convert::<Lch>();
-        println!("{}", lch.components[0]);
-        assert_eq!(lch.components[1], 0.0);
-        assert_eq!(lch.components[0], 0.0);
+        mod contains {
+            use image::Pixel;
+
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let filter = CielchFilter::new(Some(&90), Some(&200));
+                let pixel = Rgb::from_slice(&[0_u8, 255_u8, 0_u8]);
+                let case = CielchFilter::to_target(pixel);
+                assert!(filter.contains(&case));
+
+                let filter = CielchFilter::new(Some(&90), Some(&200));
+                let pixel = Rgb::from_slice(&[255_u8, 0_u8, 0_u8]);
+                let case = CielchFilter::to_target(pixel);
+                assert!(!filter.contains(&case));
+
+                let filter = CielchFilter::new(None, None);
+                let pixel = Rgb::from_slice(&[255_u8, 0_u8, 0_u8]);
+                let case = CielchFilter::to_target(pixel);
+                assert!(filter.contains(&case));
+            }
+        }
+
+        mod to_target {
+            use image::Pixel;
+
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let case = image::Rgb::from_slice(&[255_u8, 255_u8, 255_u8]);
+                let result = CielchFilter::to_target(case);
+                assert_eq!(result.components[0], constants::LIGHTNESS_MAX);
+
+                let case = image::Rgb::from_slice(&[0_u8, 0_u8, 0_u8]);
+                let result = CielchFilter::to_target(case);
+                assert_eq!(result.components[0], constants::LIGHTNESS_MIN);
+
+                let case = image::Rgb::from_slice(&[0_u8, 255_u8, 0_u8]);
+                let result = CielchFilter::to_target(case);
+                assert_ne!(result.components[1], constants::CHROMA_MIN);
+                assert!((60.0..180.0).contains(&result.components[2]));
+
+                let case = image::Rgb::from_slice(&[0_u8, 0_u8, 255_u8]);
+                let result = CielchFilter::to_target(case);
+                assert_ne!(result.components[1], constants::CHROMA_MIN);
+                assert!(!(0.0..160.0).contains(&result.components[2]));
+            }
+        }
+    }
+
+    mod pixel_to {
+        use super::*;
+
+        use color::{Lch, OpaqueColor};
+
+        #[test]
+        fn checking_value() {
+            let target = OpaqueColor::from_rgb8(255, 255, 255);
+            let lch = target.convert::<Lch>();
+            assert_eq!(pixel_to_lightness(&lch), constants::LIGHTNESS_MAX);
+
+            let target = OpaqueColor::from_rgb8(0, 0, 0);
+            let lch = target.convert::<Lch>();
+            assert_eq!(pixel_to_lightness(&lch), constants::LIGHTNESS_MIN);
+            assert_eq!(pixel_to_chroma(&lch), constants::CHROMA_MIN);
+
+            let target = OpaqueColor::from_rgb8(0, 255, 0);
+            let lch = target.convert::<Lch>();
+            assert!((60.0..180.0).contains(&pixel_to_hue(&lch)));
+        }
     }
 }

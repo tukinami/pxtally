@@ -151,19 +151,56 @@ fn pixel_to_b(oklab: &OpaqueColor<Oklab>) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use color::{Oklab, OpaqueColor};
+    use super::*;
 
-    #[test]
-    fn checking_value() {
-        let target = OpaqueColor::from_rgb8(255, 255, 255);
-        let oklab = target.convert::<Oklab>();
-        println!("{}", oklab.components[0]);
-        assert_eq!(oklab.components[0], 1.0);
+    mod oklab_filter {
+        use super::*;
 
-        let target = OpaqueColor::from_rgb8(0, 0, 0);
-        let oklab = target.convert::<Oklab>();
-        println!("{}", oklab.components[0]);
-        assert_eq!(oklab.components[1], 0.0);
-        assert_eq!(oklab.components[0], 0.0);
+        mod to_target {
+            use image::Pixel;
+
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let case = image::Rgb::from_slice(&[255_u8, 255_u8, 255_u8]);
+                let result = OklabFilter::to_target(case);
+                assert_eq!(result.components[0], constants::LIGHTNESS_MAX);
+
+                let case = image::Rgb::from_slice(&[0_u8, 0_u8, 0_u8]);
+                let result = OklabFilter::to_target(case);
+                assert_eq!(result.components[0], constants::LIGHTNESS_MIN);
+
+                let case = image::Rgb::from_slice(&[255_u8, 0_u8, 0_u8]);
+                let result = OklabFilter::to_target(case);
+                assert!(result.components[1] > 0.0);
+
+                let case = image::Rgb::from_slice(&[0_u8, 255_u8, 0_u8]);
+                let result = OklabFilter::to_target(case);
+                assert!(result.components[1] < 0.0);
+
+                let case = image::Rgb::from_slice(&[0_u8, 0_u8, 255_u8]);
+                let result = OklabFilter::to_target(case);
+                assert!(result.components[2] < 0.0);
+            }
+        }
+    }
+
+    mod pixel_to {
+        use super::*;
+        use color::{Oklab, OpaqueColor};
+
+        #[test]
+        fn checking_value() {
+            let target = OpaqueColor::from_rgb8(255, 255, 255);
+            let oklab = target.convert::<Oklab>();
+            assert_eq!(pixel_to_lightness(&oklab), constants::LIGHTNESS_MAX);
+
+            let target = OpaqueColor::from_rgb8(0, 0, 0);
+            let oklab = target.convert::<Oklab>();
+            assert_eq!(pixel_to_a(&oklab), 0.0);
+            assert_eq!(pixel_to_b(&oklab), 0.0);
+            assert_eq!(pixel_to_lightness(&oklab), constants::LIGHTNESS_MIN);
+        }
     }
 }

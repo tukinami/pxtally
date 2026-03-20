@@ -151,19 +151,57 @@ fn pixel_to_b(lab: &OpaqueColor<Lab>) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use color::{Lab, OpaqueColor};
+    use super::*;
 
-    #[test]
-    fn checking_value() {
-        let target = OpaqueColor::from_rgb8(255, 255, 255);
-        let lab = target.convert::<Lab>();
-        println!("{}", lab.components[0]);
-        assert_eq!(lab.components[0], 100.0);
+    mod cielab_filter {
+        use super::*;
 
-        let target = OpaqueColor::from_rgb8(0, 0, 0);
-        let lab = target.convert::<Lab>();
-        println!("{}", lab.components[0]);
-        assert_eq!(lab.components[1], 0.0);
-        assert_eq!(lab.components[0], 0.0);
+        mod to_target {
+            use image::Pixel;
+
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let case = image::Rgb::from_slice(&[255_u8, 255_u8, 255_u8]);
+                let result = CielabFilter::to_target(case);
+                assert_eq!(result.components[0], constants::LIGHTNESS_MAX);
+
+                let case = image::Rgb::from_slice(&[0_u8, 0_u8, 0_u8]);
+                let result = CielabFilter::to_target(case);
+                assert_eq!(result.components[0], constants::LIGHTNESS_MIN);
+
+                let case = image::Rgb::from_slice(&[255_u8, 0_u8, 0_u8]);
+                let result = CielabFilter::to_target(case);
+                assert!(result.components[1] > 0.0);
+
+                let case = image::Rgb::from_slice(&[0_u8, 255_u8, 0_u8]);
+                let result = CielabFilter::to_target(case);
+                assert!(result.components[1] < 0.0);
+
+                let case = image::Rgb::from_slice(&[0_u8, 0_u8, 255_u8]);
+                let result = CielabFilter::to_target(case);
+                assert!(result.components[2] < 0.0);
+            }
+        }
+    }
+
+    mod pixel_to {
+        use super::*;
+
+        use color::{Lab, OpaqueColor};
+
+        #[test]
+        fn checking_value() {
+            let target = OpaqueColor::from_rgb8(255, 255, 255);
+            let lab = target.convert::<Lab>();
+            assert_eq!(pixel_to_lightness(&lab), constants::LIGHTNESS_MAX);
+
+            let target = OpaqueColor::from_rgb8(0, 0, 0);
+            let lab = target.convert::<Lab>();
+            assert_eq!(pixel_to_lightness(&lab), constants::LIGHTNESS_MIN);
+            assert_eq!(pixel_to_a(&lab), 0.0);
+            assert_eq!(pixel_to_b(&lab), 0.0);
+        }
     }
 }

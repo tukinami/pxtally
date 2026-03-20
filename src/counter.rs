@@ -238,6 +238,96 @@ fn rotate_value(raw_value: f32) -> f32 {
 mod tests {
     use super::*;
 
+    struct TestFilter {
+        r_range: Option<Range<f32>>,
+    }
+
+    impl TestFilter {
+        pub fn new(r_range: Option<Range<f32>>) -> TestFilter {
+            TestFilter { r_range }
+        }
+    }
+
+    impl Filter<Rgb<u8>> for TestFilter {
+        fn contains(&self, target: &Rgb<u8>) -> bool {
+            self.r_range
+                .as_ref()
+                .map(|v| v.contains(&(target.0[0] as f32)))
+                .unwrap_or(true)
+        }
+        fn to_target(pixel: &Rgb<u8>) -> Rgb<u8> {
+            *pixel
+        }
+
+        fn hue_filter(&self) -> Option<&Angle> {
+            None
+        }
+    }
+
+    fn test_get_value_b(rgb: &Rgb<u8>) -> f32 {
+        rgb.0[2] as f32
+    }
+
+    mod filter {
+        use super::*;
+
+        mod create_hue_filter {
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let result =
+                    <TestFilter as Filter<Rgb<u8>>>::create_hue_filter(None, Some(&100)).unwrap();
+                assert_eq!(result.start(), 0.0);
+                assert_eq!(result.end(), 100.0);
+
+                let result =
+                    <TestFilter as Filter<Rgb<u8>>>::create_hue_filter(Some(&10), Some(&100))
+                        .unwrap();
+                assert_eq!(result.start(), 10.0);
+                assert_eq!(result.end(), 100.0);
+
+                let result = <TestFilter as Filter<Rgb<u8>>>::create_hue_filter(Some(&100), None);
+                assert!(result.is_none());
+
+                let result = <TestFilter as Filter<Rgb<u8>>>::create_hue_filter(None, None);
+                assert!(result.is_none());
+            }
+        }
+
+        mod filter_value {
+            use image::Pixel;
+
+            use super::*;
+
+            #[test]
+            fn checking_value_01() {
+                let filter = TestFilter::new(Some(0.0..128.0));
+
+                let case = Rgb::from_slice(&[0_u8, 0_u8, 128_u8]);
+                let result = filter.filter_value(case, test_get_value_b);
+                assert_eq!(result, Some(128.0));
+
+                let case = Rgb::from_slice(&[255_u8, 0_u8, 128_u8]);
+                let result = filter.filter_value(case, test_get_value_b);
+                assert_eq!(result, None);
+            }
+
+            #[test]
+            fn checking_value_02() {
+                let filter = TestFilter::new(None);
+
+                let case = Rgb::from_slice(&[0_u8, 0_u8, 128_u8]);
+                let result = filter.filter_value(case, test_get_value_b);
+                assert_eq!(result, Some(128.0));
+
+                let case = Rgb::from_slice(&[255_u8, 0_u8, 200_u8]);
+                let result = filter.filter_value(case, test_get_value_b);
+                assert_eq!(result, Some(200.0));
+            }
+        }
+    }
+
     mod angle_counter {
         use super::*;
 
@@ -302,10 +392,33 @@ mod tests {
                 assert_eq!(result.end(), rotate_value(360.0_f32.next_up()));
             }
         }
+
+        mod count {
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let mut result = AngleCounter::new(350.0, 400.0);
+                assert_eq!(result.count(), 0);
+                result.count_add(5);
+                assert_eq!(result.count(), 5);
+            }
+        }
     }
 
     mod percentage_counter {
         use super::*;
+
+        mod new {
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let result = PercentageCounter::new(0.0, 1.0f32.next_up());
+                assert_eq!(result.start(), 0.0);
+                assert_eq!(result.end(), 1.0f32.next_up());
+            }
+        }
 
         mod contains {
             use super::*;
@@ -316,36 +429,22 @@ mod tests {
                 assert!(result.contains(&1.0));
             }
         }
+
+        mod count {
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let mut result = PercentageCounter::new(0.0, 1.0f32.next_up());
+                assert_eq!(result.count(), 0);
+                result.count_add(5);
+                assert_eq!(result.count(), 5);
+            }
+        }
     }
 
-    mod count_by_func_with_iter {
+    mod count_by_func_with_filter {
         use super::*;
-
-        struct TestFilter {
-            r_range: Option<Range<f32>>,
-        }
-
-        impl TestFilter {
-            pub fn new(r_range: Option<Range<f32>>) -> TestFilter {
-                TestFilter { r_range }
-            }
-        }
-
-        impl Filter<Rgb<u8>> for TestFilter {
-            fn contains(&self, target: &Rgb<u8>) -> bool {
-                self.r_range
-                    .as_ref()
-                    .map(|v| v.contains(&(target.0[0] as f32)))
-                    .unwrap_or(true)
-            }
-            fn to_target(pixel: &Rgb<u8>) -> Rgb<u8> {
-                *pixel
-            }
-
-            fn hue_filter(&self) -> Option<&Angle> {
-                None
-            }
-        }
 
         fn case_rgb_image() -> RgbImage {
             let mut image = RgbImage::new(2, 3);
@@ -363,11 +462,8 @@ mod tests {
         }
 
         #[test]
-        fn checking_value() {
+        fn checking_value_01() {
             let case = case_rgb_image();
-            fn test_get_value_b(rgb: &Rgb<u8>) -> f32 {
-                rgb.0[2] as f32
-            }
 
             let mut counters = create_counters(10, 0.0, 255.0, PercentageCounter::new);
             let filter = TestFilter::new(None);
@@ -390,6 +486,11 @@ mod tests {
 
             let total_pixel = counters.iter().fold(0, |acc, c| c.count + acc);
             assert_eq!(total_pixel, 6);
+        }
+
+        #[test]
+        fn checking_value_02() {
+            let case = case_rgb_image();
 
             let mut counters = create_counters(10, 0.0, 255.0, PercentageCounter::new);
             let r_range = 0.0..20.0f32.next_up();

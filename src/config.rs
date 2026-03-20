@@ -202,7 +202,7 @@ fn oklch_hue_in_range(s: &str) -> Result<u16, String> {
     let value = s
         .parse::<u16>()
         .map_err(|_| format!("{s} is not a u16 number."))?;
-    if (process::oklch::constants::HUE_MIN..process::oklch::constants::HUE_MAX)
+    if (process::oklch::constants::HUE_MIN..=process::oklch::constants::HUE_MAX)
         .contains(&(value as f32))
     {
         Ok(value)
@@ -244,5 +244,46 @@ fn float_in_range(s: &str, start: f32, end_include: f32, name: &str) -> Result<f
             "{} is not in range {}-{}",
             name, start, end_include
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod oklch_hue_in_range {
+        use super::*;
+
+        #[test]
+        fn checking_value() {
+            let result = oklch_hue_in_range("0").unwrap();
+            assert_eq!(result, 0);
+            let result = oklch_hue_in_range("360").unwrap();
+            assert_eq!(result, 360);
+
+            assert!(oklch_hue_in_range("400").is_err());
+            assert!(oklch_hue_in_range("-1").is_err());
+            assert!(oklch_hue_in_range("ss").is_err());
+        }
+    }
+
+    mod float_in_range {
+        use super::*;
+
+        #[test]
+        fn checking_value() {
+            let result = float_in_range("0.5", 0.0, 1.0, "test").unwrap();
+            assert_eq!(result, 0.5);
+            let result = float_in_range("0.0", 0.0, 1.0, "test").unwrap();
+            assert_eq!(result, 0.0);
+            let result = float_in_range("1.0", 0.0, 1.0, "test").unwrap();
+            assert_eq!(result, 1.0);
+            let result = float_in_range("1", 0.0, 1.0, "test").unwrap();
+            assert_eq!(result, 1.0);
+
+            assert!(float_in_range("ss", 0.0, 1.0, "test").is_err());
+            assert!(float_in_range("2", 0.0, 1.0, "test").is_err());
+            assert!(float_in_range("2.0", 0.0, 1.0, "test").is_err());
+        }
     }
 }

@@ -158,24 +158,86 @@ fn pixel_to_lightness(hsl: &OpaqueColor<Hsl>) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use color::{Hsl, OpaqueColor};
+    use super::*;
 
-    #[test]
-    fn checking_value() {
-        let target = OpaqueColor::from_rgb8(255, 255, 255);
-        let hsl = target.convert::<Hsl>();
-        println!("{}", hsl.components[2]);
-        assert_eq!(hsl.components[1], 0.0);
-        assert_eq!(hsl.components[2], 100.0);
+    mod hsl_filter {
+        use super::*;
 
-        let target = OpaqueColor::from_rgb8(0, 0, 0);
-        let hsl = target.convert::<Hsl>();
-        println!("{}", hsl.components[2]);
-        assert_eq!(hsl.components[2], 0.0);
+        mod contains {
+            use image::Pixel;
 
-        let target = OpaqueColor::from_rgb8(255, 0, 0);
-        let hsl = target.convert::<Hsl>();
-        println!("{}", hsl.components[1]);
-        assert_eq!(hsl.components[1], 100.0);
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let filter = HslFilter::new(Some(&90), Some(&200));
+                let pixel = Rgb::from_slice(&[0_u8, 255_u8, 0_u8]);
+                let case = HslFilter::to_target(pixel);
+                assert!(filter.contains(&case));
+
+                let filter = HslFilter::new(Some(&90), Some(&200));
+                let pixel = Rgb::from_slice(&[255_u8, 0_u8, 0_u8]);
+                let case = HslFilter::to_target(pixel);
+                assert!(!filter.contains(&case));
+
+                let filter = HslFilter::new(None, None);
+                let pixel = Rgb::from_slice(&[255_u8, 0_u8, 0_u8]);
+                let case = HslFilter::to_target(pixel);
+                assert!(filter.contains(&case));
+            }
+        }
+
+        mod to_target {
+            use image::Pixel;
+
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let case = image::Rgb::from_slice(&[255_u8, 255_u8, 255_u8]);
+                let result = HslFilter::to_target(case);
+                assert_eq!(result.components[2], constants::LIGHTNESS_MAX);
+
+                let case = image::Rgb::from_slice(&[0_u8, 0_u8, 0_u8]);
+                let result = HslFilter::to_target(case);
+                assert_eq!(result.components[2], constants::LIGHTNESS_MIN);
+
+                let case = image::Rgb::from_slice(&[255_u8, 0_u8, 0_u8]);
+                let result = HslFilter::to_target(case);
+                assert_eq!(result.components[1], constants::SATURATION_MAX);
+                assert_eq!(result.components[0], 0.0);
+
+                let case = image::Rgb::from_slice(&[0_u8, 255_u8, 0_u8]);
+                let result = HslFilter::to_target(case);
+                assert_eq!(result.components[0], 120.0);
+
+                let case = image::Rgb::from_slice(&[0_u8, 0_u8, 255_u8]);
+                let result = HslFilter::to_target(case);
+                assert_eq!(result.components[0], 240.0);
+            }
+        }
+    }
+
+    mod pixel_to {
+        use super::*;
+        use color::{Hsl, OpaqueColor};
+
+        #[test]
+        fn checking_value() {
+            let target = OpaqueColor::from_rgb8(255, 255, 255);
+            let hsl = target.convert::<Hsl>();
+            assert_eq!(pixel_to_saturation(&hsl), constants::SATURATION_MIN);
+            assert_eq!(pixel_to_lightness(&hsl), constants::LIGHTNESS_MAX);
+
+            let target = OpaqueColor::from_rgb8(0, 0, 0);
+            let hsl = target.convert::<Hsl>();
+            assert_eq!(pixel_to_saturation(&hsl), constants::SATURATION_MIN);
+            assert_eq!(pixel_to_lightness(&hsl), constants::LIGHTNESS_MIN);
+
+            let target = OpaqueColor::from_rgb8(255, 0, 0);
+            let hsl = target.convert::<Hsl>();
+            assert_eq!(pixel_to_hue(&hsl), 0.0);
+            assert_eq!(pixel_to_saturation(&hsl), constants::SATURATION_MAX);
+        }
     }
 }

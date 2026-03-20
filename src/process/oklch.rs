@@ -157,19 +157,82 @@ fn pixel_to_hue(oklch: &OpaqueColor<Oklch>) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use color::{Oklch, OpaqueColor};
+    use super::*;
 
-    #[test]
-    fn checking_value() {
-        let target = OpaqueColor::from_rgb8(255, 255, 255);
-        let oklch = target.convert::<Oklch>();
-        println!("{}", oklch.components[0]);
-        assert_eq!(oklch.components[0], 1.0);
+    mod oklch_filter {
+        use super::*;
 
-        let target = OpaqueColor::from_rgb8(0, 0, 0);
-        let oklch = target.convert::<Oklch>();
-        println!("{}", oklch.components[0]);
-        assert_eq!(oklch.components[1], 0.0);
-        assert_eq!(oklch.components[0], 0.0);
+        mod contains {
+            use image::Pixel;
+
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let filter = OklchFilter::new(Some(&90), Some(&200));
+                let pixel = Rgb::from_slice(&[0_u8, 255_u8, 0_u8]);
+                let case = OklchFilter::to_target(pixel);
+                assert!(filter.contains(&case));
+
+                let filter = OklchFilter::new(Some(&90), Some(&200));
+                let pixel = Rgb::from_slice(&[255_u8, 0_u8, 0_u8]);
+                let case = OklchFilter::to_target(pixel);
+                assert!(!filter.contains(&case));
+
+                let filter = OklchFilter::new(None, None);
+                let pixel = Rgb::from_slice(&[255_u8, 0_u8, 0_u8]);
+                let case = OklchFilter::to_target(pixel);
+                assert!(filter.contains(&case));
+            }
+        }
+
+        mod to_target {
+            use image::Pixel;
+
+            use super::*;
+
+            #[test]
+            fn checking_value() {
+                let case = image::Rgb::from_slice(&[255_u8, 255_u8, 255_u8]);
+                let result = OklchFilter::to_target(case);
+                assert_eq!(result.components[0], constants::LIGHTNESS_MAX);
+
+                let case = image::Rgb::from_slice(&[0_u8, 0_u8, 0_u8]);
+                let result = OklchFilter::to_target(case);
+                assert_eq!(result.components[0], constants::LIGHTNESS_MIN);
+
+                let case = image::Rgb::from_slice(&[0_u8, 255_u8, 0_u8]);
+                let result = OklchFilter::to_target(case);
+                assert_ne!(result.components[1], constants::CHROMA_MIN);
+                assert!((60.0..180.0).contains(&result.components[2]));
+
+                let case = image::Rgb::from_slice(&[0_u8, 0_u8, 255_u8]);
+                let result = OklchFilter::to_target(case);
+                assert_ne!(result.components[1], constants::CHROMA_MIN);
+                assert!(!(0.0..160.0).contains(&result.components[2]));
+            }
+        }
+    }
+
+    mod pixel_to {
+        use super::*;
+
+        use color::{Oklch, OpaqueColor};
+
+        #[test]
+        fn checking_value() {
+            let target = OpaqueColor::from_rgb8(255, 255, 255);
+            let oklch = target.convert::<Oklch>();
+            assert_eq!(pixel_to_lightness(&oklch), constants::LIGHTNESS_MAX);
+
+            let target = OpaqueColor::from_rgb8(0, 0, 0);
+            let oklch = target.convert::<Oklch>();
+            assert_eq!(pixel_to_lightness(&oklch), constants::LIGHTNESS_MIN);
+            assert_eq!(pixel_to_chroma(&oklch), constants::CHROMA_MIN);
+
+            let target = OpaqueColor::from_rgb8(0, 255, 0);
+            let oklch = target.convert::<Oklch>();
+            assert!((60.0..180.0).contains(&pixel_to_hue(&oklch)));
+        }
     }
 }
