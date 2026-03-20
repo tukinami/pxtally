@@ -26,7 +26,7 @@ struct CielchFilter {
 }
 
 impl CielchFilter {
-    pub fn new(start_hue: &Option<u16>, end_hue: &Option<u16>) -> CielchFilter {
+    pub fn new(start_hue: Option<&u16>, end_hue: Option<&u16>) -> CielchFilter {
         let hue_filter =
             <CielchFilter as Filter<OpaqueColor<Lch>>>::create_hue_filter(start_hue, end_hue);
 
@@ -78,7 +78,7 @@ fn process_lightness(rgb_image: &RgbImage, args: &ValueWithHArgs) -> Result<(), 
         PercentageCounter::new,
     );
 
-    let filter = CielchFilter::new(&args.start_hue, &args.end_hue);
+    let filter = CielchFilter::new(args.start_hue.as_ref(), args.end_hue.as_ref());
 
     let extracted_totals =
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_lightness);
@@ -104,7 +104,7 @@ fn process_chroma(rgb_image: &RgbImage, args: &ValueWithHArgs) -> Result<(), PxT
         PercentageCounter::new,
     );
 
-    let filter = CielchFilter::new(&args.start_hue, &args.end_hue);
+    let filter = CielchFilter::new(args.start_hue.as_ref(), args.end_hue.as_ref());
 
     let extracted_totals =
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_chroma);
@@ -126,7 +126,7 @@ fn process_hue(rgb_image: &RgbImage, args: &AngleArgs) -> Result<(), PxTallyErro
     let start = (args.start % 360) as f32;
     let mut counters = create_counters(args.divisor, start, constants::HUE_MAX, AngleCounter::new);
 
-    let filter = CielchFilter::new(&None, &None);
+    let filter = CielchFilter::new(None, None);
 
     let extracted_totals =
         count_by_func_with_filter(rgb_image, &mut counters, &filter, pixel_to_hue);

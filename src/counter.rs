@@ -15,10 +15,10 @@ pub(crate) trait Filter<T> {
     fn to_target(pixel: &Rgb<u8>) -> T;
     fn hue_filter(&self) -> Option<&Angle>;
 
-    fn create_hue_filter(start_hue: &Option<u16>, end_hue: &Option<u16>) -> Option<Angle> {
-        if let Some(end) = *end_hue {
-            let end = end as f32;
-            let start = start_hue.unwrap_or(0) as f32;
+    fn create_hue_filter(start_hue: Option<&u16>, end_hue: Option<&u16>) -> Option<Angle> {
+        if let Some(end) = end_hue {
+            let end = *end as f32;
+            let start = *start_hue.unwrap_or(&0) as f32;
             Some(Angle::new(start, end))
         } else {
             None
