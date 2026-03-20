@@ -47,20 +47,20 @@ Tally result for `hue` under `HSL`:
 ``` PowerShell
 PS path\to\pxtally> pxtally.exe hsl hue --path C:\Users\Public\Pictures\something.png
 hsl hue
-  0.00 ->  30.00 :   8.98% (     94208 px)
- 30.00 ->  60.00 :   8.69% (     91136 px)
- 60.00 ->  90.00 :   8.79% (     92160 px)
- 90.00 -> 120.00 :   7.71% (     80896 px)
-120.00 -> 150.00 :   7.71% (     80896 px)
-150.00 -> 180.00 :   8.69% (     91136 px)
-180.00 -> 210.00 :   8.79% (     92160 px)
-210.00 -> 240.00 :   7.71% (     80896 px)
-240.00 -> 270.00 :   7.71% (     80896 px)
-270.00 -> 300.00 :   8.69% (     91136 px)
-300.00 -> 330.00 :   8.79% (     92160 px)
-330.00 ->   0.00 :   7.71% (     80896 px)
+   0.00 ->   30.00 :   8.98% (     94208 px)
+  30.00 ->   60.00 :   8.69% (     91136 px)
+  60.00 ->   90.00 :   8.79% (     92160 px)
+  90.00 ->  120.00 :   7.71% (     80896 px)
+ 120.00 ->  150.00 :   7.71% (     80896 px)
+ 150.00 ->  180.00 :   8.69% (     91136 px)
+ 180.00 ->  210.00 :   8.79% (     92160 px)
+ 210.00 ->  240.00 :   7.71% (     80896 px)
+ 240.00 ->  270.00 :   7.71% (     80896 px)
+ 270.00 ->  300.00 :   8.69% (     91136 px)
+ 300.00 ->  330.00 :   8.79% (     92160 px)
+ 330.00 ->  360.00 :   7.71% (     80896 px)
 
- avr : 177.7155
+ avr :  177.7155
 ```
 
 ## Installation
@@ -170,6 +170,9 @@ Many thanks to the following (in no particular order):
 + [color](https://github.com/linebender/color) / Raph Levien, Bruce Mitchener, Jr., Tom Churchman, Jordan Johnson
 + [serde](https://github.com/serde-rs/serde) / Erick Tryzelaar, David Tolnay
 + [serde_json](https://github.com/serde-rs/json) / Erick Tryzelaar, David Tolnay
++ [rust-i18n](https://github.com/longbridge/rust-i18n) / Longbridge
++ [sys-locale](https://github.com/1Password/sys-locale) / 1Password
++ [rust-language-tags](https://github.com/pyfisch/rust-language-tags) / Pyfisch
 
 ## License
 
